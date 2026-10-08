@@ -13,6 +13,9 @@ OpenSEO is deployed from the `selfhost` Alchemy stage to:
 - Workers subdomain: `geoff-038.workers.dev`
 - Zero Trust team: `late-unit-a3c5.cloudflareaccess.com`
 
+Custom-domain work is deferred. Keep using the workers.dev URL above until a
+custom domain is deliberately planned and deployed.
+
 Cloudflare Access protects the app and MCP endpoint. The current allow policy
 contains only `geoff@alljigsawpuzzles.co.uk`. The Access application is
 `open-seo selfhost` (`afe193f0-1c9d-42c3-94a5-a10ccb4b6b9e`), with policy
@@ -47,10 +50,14 @@ Cloud, configure these exact redirect URIs:
 - `https://open-seo-selfhost.geoff-038.workers.dev/api/gsc/oauth/callback`
 - `https://open-seo-selfhost.geoff-038.workers.dev/api/ga4/oauth/callback`
 
-The OAuth consent screen remains in **Testing**. Google issues refresh tokens
-that expire after seven days for an external app in Testing when it requests
-these API scopes. Add every connecting Google account as a test user and expect
-to reconnect weekly until the consent screen is moved out of Testing. See
+The Google OAuth consent screen is **External / In production**. Removing the
+uploaded logo restored consent, but branding verification is still incomplete;
+the consent screen currently displays `geoff-038.workers.dev`.
+
+Troubleshooting note for future changes: an external OAuth app in **Testing**
+receives refresh tokens that expire after seven days when it requests these API
+scopes. That is not the current production state, but it explains weekly
+reconnection if the consent screen is ever moved back to Testing. See
 [Google's refresh-token policy](https://developers.google.com/identity/protocols/oauth2#expiration).
 
 Cloudflare Access Managed OAuth is enabled for MCP. Its dashboard-managed
