@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCrawlThrottle } from "@/server/lib/audit/crawl-throttle";
 import { crawlPage } from "@/server/workflows/site-audit-workflow-helpers";
+import { shopifyCrawlerHeaders } from "@/shared/crawler-access";
 
 const PAGE_URL = "https://example.com/page";
 const PAGE_HTML =
@@ -70,6 +71,39 @@ describe("crawlPage", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(page?.fetchClass).toBe("rate_limited");
+  });
+
+  it("logs safe signed-request diagnostics for a final 429", async () => {
+    vi.useFakeTimers();
+    stubFetch({ status: 429, retryAfter: "1" });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const crawled = crawlPage(
+      PAGE_URL,
+      0,
+      false,
+      createCrawlThrottle(Date.now() + 90_000),
+      {
+        auditId: "audit-1",
+        access: {
+          host: "example.com",
+          headers: shopifyCrawlerHeaders("sig1=(...)", "sig1=:secret:"),
+          expiresAt: null,
+        },
+      },
+    );
+    await vi.advanceTimersByTimeAsync(30_000);
+    await crawled;
+
+    expect(warn).toHaveBeenCalledWith("site_audit:fetch_failure", {
+      auditId: "audit-1",
+      hostname: "example.com",
+      status: 429,
+      signatureAttached: true,
+      redirectOutcome: "not_followed",
+      retryAfter: "1",
+      errorCategory: "rate_limited",
+    });
   });
 
   // A long Retry-After is deferred to a later chunk; one past the audit's

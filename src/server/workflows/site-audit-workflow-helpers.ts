@@ -34,7 +34,7 @@ function parseLinkHeaderCanonical(
 async function fetchPage(
   url: string,
   throttle: CrawlThrottle,
-  access: CrawlerAccess | null | undefined,
+  crawlerHeaders: Record<string, string>,
 ) {
   for (let attempt = 1; ; attempt++) {
     if (!(await throttle.ready())) return null;
@@ -49,7 +49,7 @@ async function fetchPage(
       headers: {
         "User-Agent": CRAWL_USER_AGENT,
         Accept: "text/html,application/xhtml+xml",
-        ...crawlerHeadersFor(url, access),
+        ...crawlerHeaders,
       },
       redirect: "manual",
       signal: AbortSignal.timeout(15_000),
@@ -86,16 +86,26 @@ export async function crawlPage(
     /** Crawler-access headers for the audited host, when the org has one. */
     access?: CrawlerAccess | null;
     render?: (url: string) => Promise<RenderedPage>;
+    /** Correlates safe fetch diagnostics with one audit in Workers logs. */
+    auditId?: string;
   } = {},
 ): Promise<CrawledPageResult | null> {
-  const { access, render } = options;
+  const { access, render, auditId } = options;
   const startTime = Date.now();
+  // Calculate once for this request, so the boolean we log describes the
+  // exact header set passed to fetch without ever retaining its values.
+  const crawlerHeaders = crawlerHeadersFor(url, access);
+  const signatureAttached = Object.hasOwn(crawlerHeaders, "Signature");
+  let statusCode: number | null = null;
+  let retryAfter: string | null = null;
+  let renderAttempted = false;
 
   try {
-    const fetched = await fetchPage(url, throttle, access);
+    const fetched = await fetchPage(url, throttle, crawlerHeaders);
     if (!fetched) return null;
     const { response, responseTimeMs, rateLimited } = fetched;
-    let statusCode = response.status;
+    statusCode = response.status;
+    retryAfter = response.headers.get("retry-after");
     const xRobotsTag = response.headers.get("x-robots-tag");
     const headerCanonicalUrl = parseLinkHeaderCanonical(
       response.headers.get("link"),
@@ -141,6 +151,7 @@ export async function crawlPage(
       (challenged || (fetchClass === "ok" && statusCode < 400))
     ) {
       try {
+        renderAttempted = true;
         const page = await render(url);
         body = page.html;
         // A challenge's status was never the page's. Browser Run reports the
@@ -151,10 +162,35 @@ export async function crawlPage(
       } catch (error) {
         // A challenge that neither renderer passed stays blocked.
         if (!challenged) throw error;
+        logCrawlFailure({
+          auditId,
+          url,
+          statusCode,
+          signatureAttached,
+          retryAfter,
+          redirectOutcome: "not_followed",
+          errorCategory: "render_failed",
+        });
       }
     }
 
     if (!isHtml || fetchClass !== "ok" || statusCode >= 400) {
+      if (fetchClass !== "ok" || statusCode >= 400) {
+        logCrawlFailure({
+          auditId,
+          url,
+          statusCode,
+          signatureAttached,
+          retryAfter,
+          redirectOutcome: "not_followed",
+          errorCategory:
+            fetchClass === "rate_limited"
+              ? "rate_limited"
+              : fetchClass === "blocked"
+                ? "blocked_response"
+                : "http_response",
+        });
+      }
       return emptyPageResult({
         url,
         statusCode,
@@ -244,6 +280,17 @@ export async function crawlPage(
     // error that lets the scheduler continue making requests.
     if (throttle.checkpointFailed) throw error;
     const responseTimeMs = Date.now() - startTime;
+    logCrawlFailure({
+      auditId,
+      url,
+      statusCode,
+      signatureAttached,
+      retryAfter,
+      redirectOutcome: "unknown",
+      errorCategory: renderAttempted
+        ? "render_failed"
+        : classifyCrawlError(error),
+    });
     console.warn(`Failed to crawl ${url}:`, error);
     return emptyPageResult({
       url,
@@ -257,6 +304,50 @@ export async function crawlPage(
       inSitemap,
     });
   }
+}
+
+type CrawlFailureDiagnostic = {
+  auditId: string | undefined;
+  url: string;
+  statusCode: number | null;
+  signatureAttached: boolean;
+  retryAfter: string | null;
+  redirectOutcome: "not_followed" | "unknown";
+  errorCategory:
+    | "blocked_response"
+    | "http_response"
+    | "network"
+    | "other"
+    | "rate_limited"
+    | "render_failed"
+    | "timeout";
+};
+
+/**
+ * Safe enough for production logs: it intentionally excludes URLs beyond the
+ * hostname, headers, signature values, response bodies, and raw exceptions.
+ */
+function logCrawlFailure(diagnostic: CrawlFailureDiagnostic) {
+  if (!diagnostic.auditId) return;
+  console.warn("site_audit:fetch_failure", {
+    auditId: diagnostic.auditId,
+    hostname: new URL(diagnostic.url).hostname,
+    status: diagnostic.statusCode,
+    signatureAttached: diagnostic.signatureAttached,
+    redirectOutcome: diagnostic.redirectOutcome,
+    retryAfter: diagnostic.retryAfter,
+    errorCategory: diagnostic.errorCategory,
+  });
+}
+
+function classifyCrawlError(error: unknown): "network" | "other" | "timeout" {
+  if (
+    error instanceof Error &&
+    (error.name === "TimeoutError" || error.name === "AbortError")
+  ) {
+    return "timeout";
+  }
+  return error instanceof TypeError ? "network" : "other";
 }
 
 function emptyPageResult(input: {
