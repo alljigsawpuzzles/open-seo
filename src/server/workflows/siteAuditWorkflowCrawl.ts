@@ -317,7 +317,7 @@ async function runCrawlChunk(
       entry.depth,
       entry.inSitemap,
       throttle,
-      { access: input.access, render },
+      { access: input.access, render, auditId },
     )
       .then((page) => {
         if (!page) {
