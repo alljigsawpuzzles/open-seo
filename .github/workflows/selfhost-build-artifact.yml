@@ -1,0 +1,42 @@
+name: Build self-host artifact
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The build receives no deployment configuration or secrets. Alchemy
+      # resolves those only on the local machine that deploys this artifact.
+      - name: Build self-host Workers and client
+        run: pnpm vite build --mode selfhost
+
+      - name: Record source revision
+        run: git rev-parse HEAD > build-commit.txt
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfhost-dist
+          path: |
+            dist
+            build-commit.txt
+          include-hidden-files: true
+          retention-days: 1
