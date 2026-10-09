@@ -21,13 +21,13 @@ export async function runDirectCrawlDiagnostic(
   access: CrawlerAccess | null,
 ): Promise<DirectCrawlDiagnostic> {
   const crawlerHeaders = crawlerHeadersFor(url, access);
-  const headerPresence = Object.fromEntries(
-    ["Signature-Input", "Signature", "Signature-Agent"].map((name) => [
-      name,
-      typeof crawlerHeaders[name] === "string" &&
-        crawlerHeaders[name].length > 0,
-    ]),
-  ) as DirectCrawlDiagnostic["headerPresence"];
+  const hasHeader = (name: string) =>
+    typeof crawlerHeaders[name] === "string" && crawlerHeaders[name].length > 0;
+  const headerPresence = {
+    "Signature-Input": hasHeader("Signature-Input"),
+    Signature: hasHeader("Signature"),
+    "Signature-Agent": hasHeader("Signature-Agent"),
+  };
   const started = Date.now();
   const timestamp = new Date(started).toISOString();
   try {
