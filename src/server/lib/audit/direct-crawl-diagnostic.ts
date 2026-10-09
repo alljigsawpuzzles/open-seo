@@ -1,6 +1,6 @@
 import { crawlerHeadersFor, type CrawlerAccess } from "@/shared/crawler-access";
 
-export type DirectCrawlDiagnostic = {
+type DirectCrawlDiagnostic = {
   timestamp: string;
   status: number | null;
   durationMs: number;

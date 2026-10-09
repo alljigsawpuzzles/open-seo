@@ -19,7 +19,7 @@ export type ShopifySignatureProblem =
   | { reason: "wrong_domain"; host: string; signedHost: string }
   | { reason: "invalid"; host: string };
 
-export type ShopifySignatureValidation =
+type ShopifySignatureValidation =
   | { outcome: "valid" }
   | { outcome: "unverifiable" }
   | { outcome: "invalid"; problem: ShopifySignatureProblem };
