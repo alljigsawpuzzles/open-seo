@@ -63,7 +63,7 @@ describe("runDirectCrawlDiagnostic", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
       "https://store.example/robots.txt",
       "https://store.example/sitemap.xml",
       "https://store.example/",
