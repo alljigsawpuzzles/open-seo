@@ -21,7 +21,7 @@ type DiagnosticRequestOptions = {
   includeAccept?: boolean;
 };
 
-export type AuditSequenceDiagnostic = {
+type AuditSequenceDiagnostic = {
   robots: DirectCrawlDiagnostic;
   sitemap: DirectCrawlDiagnostic;
   homepage: DirectCrawlDiagnostic;

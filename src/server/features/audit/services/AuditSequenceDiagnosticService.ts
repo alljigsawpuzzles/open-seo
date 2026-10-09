@@ -66,6 +66,7 @@ async function diagnoseAuditSequence(input: {
                   problem: { ...workerResult.validation.problem },
                 }
               : { outcome: workerResult.validation.outcome },
+          credentialFingerprint: workerResult.credentialFingerprint,
           appProbe: {
             ...appProbe,
             headerPresence: { ...appProbe.headerPresence },

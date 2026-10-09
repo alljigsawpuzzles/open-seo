@@ -15,14 +15,31 @@ import {
   CrawlerCredentialService,
   type SealedCrawlerAccess,
 } from "@/server/features/audit/services/CrawlerCredentialService";
+import { sha256Hex } from "@/server/lib/audit/ids";
 import { validateShopifySignature } from "@/server/features/audit/services/shopifySignature";
 import {
   runAuditSequenceDiagnostic,
   runDirectCrawlDiagnostic,
 } from "@/server/lib/audit/direct-crawl-diagnostic";
+import type { CrawlerAccess } from "@/shared/crawler-access";
 
 export { SiteAuditWorkflow } from "./server/workflows/SiteAuditWorkflow";
 export { AuditScratchpad } from "./server/features/audit/AuditScratchpad";
+
+async function inspectCrawlerAccess(access: CrawlerAccess) {
+  return {
+    validation: await validateShopifySignature({
+      host: access.host,
+      signatureInput: access.headers["Signature-Input"],
+      signature: access.headers.Signature,
+    }),
+    credentialFingerprint: (
+      await sha256Hex(
+        `crawler-access-v1\0${access.headers["Signature-Input"]}\0${access.headers.Signature}`,
+      )
+    ).slice(0, 16),
+  };
+}
 
 // The scratchpad DO is private to this worker: the Cloudflare API refuses an
 // upload that deletes a class while any binding still references its name, so
@@ -49,14 +66,10 @@ export default class AuditEngine extends WorkerEntrypoint {
       input.access,
     );
     if (!access) return { access: "decryption_failed" as const };
-    const validation = await validateShopifySignature({
-      host: access.host,
-      signatureInput: access.headers["Signature-Input"],
-      signature: access.headers.Signature,
-    });
+    const diagnostic = await inspectCrawlerAccess(access);
     return {
       access: "opened" as const,
-      validation,
+      ...diagnostic,
       request: await runDirectCrawlDiagnostic(input.url, access),
     };
   }
@@ -70,14 +83,10 @@ export default class AuditEngine extends WorkerEntrypoint {
       input.access,
     );
     if (!access) return { access: "decryption_failed" as const };
-    const validation = await validateShopifySignature({
-      host: access.host,
-      signatureInput: access.headers["Signature-Input"],
-      signature: access.headers.Signature,
-    });
+    const diagnostic = await inspectCrawlerAccess(access);
     return {
       access: "opened" as const,
-      validation,
+      ...diagnostic,
       requests: await runAuditSequenceDiagnostic(input.url, access),
     };
   }
