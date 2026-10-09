@@ -397,9 +397,11 @@ export default Alchemy.Stack(
         R2: resources.R2,
         // Deliberately NOT ...dataEnv: this worker crawls and parses
         // attacker-influenced HTML, so it gets only the secrets its code
-        // path reads — DataForSEO (Lighthouse), Autumn (metering), PostHog
-        // (capture). No auth/OAuth/Loops/Turnstile secrets.
+        // path reads — crawler credentials share Better Auth's encryption
+        // key, plus DataForSEO (Lighthouse), Autumn (metering), and PostHog
+        // (capture). No OAuth/Loops/Turnstile secrets.
         BROWSER: Cloudflare.Browser(),
+        BETTER_AUTH_SECRET: dataEnv.BETTER_AUTH_SECRET,
         CONTEXT_API_KEY: dataEnv.CONTEXT_API_KEY,
         DATAFORSEO_API_KEY: dataEnv.DATAFORSEO_API_KEY,
         AUTUMN_SECRET_KEY: dataEnv.AUTUMN_SECRET_KEY,
