@@ -154,6 +154,25 @@ async function resolveCrawlerAccess(
   };
 }
 
+async function getCrawlerAccessForCredential(
+  organizationId: string,
+  id: string,
+): Promise<{ id: string; sealed: SealedCrawlerAccess } | null> {
+  const row = (
+    await CrawlerCredentialRepository.listForOrganization(organizationId)
+  ).find((candidate) => candidate.id === id);
+  if (!row) return null;
+  return {
+    id: row.id,
+    sealed: {
+      host: row.host,
+      signatureInput: row.signatureInput,
+      signature: row.signature,
+      expiresAt: row.expiresAt,
+    },
+  };
+}
+
 /** Decrypts in memory only. The result must never be persisted or logged. */
 async function openCrawlerAccess(
   sealed: SealedCrawlerAccess | null | undefined,
@@ -182,5 +201,6 @@ export const CrawlerCredentialService = {
   saveCrawlerCredential,
   deleteCrawlerCredential,
   resolveCrawlerAccess,
+  getCrawlerAccessForCredential,
   openCrawlerAccess,
 } as const;

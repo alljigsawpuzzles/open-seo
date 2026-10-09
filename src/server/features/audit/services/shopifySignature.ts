@@ -19,6 +19,11 @@ export type ShopifySignatureProblem =
   | { reason: "wrong_domain"; host: string; signedHost: string }
   | { reason: "invalid"; host: string };
 
+export type ShopifySignatureValidation =
+  | { outcome: "valid" }
+  | { outcome: "unverifiable" }
+  | { outcome: "invalid"; problem: ShopifySignatureProblem };
+
 const directoryKeySchema = z.object({ kid: z.string(), x: z.string() });
 
 /**
@@ -30,14 +35,25 @@ export async function checkShopifySignature(input: {
   signatureInput: string;
   signature: string;
 }): Promise<ShopifySignatureProblem | null> {
+  const validation = await validateShopifySignature(input);
+  return validation.outcome === "invalid" ? validation.problem : null;
+}
+
+/** Verifies a stored signature without exposing its values. */
+export async function validateShopifySignature(input: {
+  host: string;
+  signatureInput: string;
+  signature: string;
+}): Promise<ShopifySignatureValidation> {
   const { host, signatureInput } = input;
   const params = /^\w+=(\(.+)$/.exec(signatureInput)?.[1];
   const keyId = /;keyid="([^"]+)"/.exec(signatureInput)?.[1];
   const signatureBytes = decodeSignature(input.signature);
-  if (!params || !keyId || !signatureBytes) return { reason: "invalid", host };
+  if (!params || !keyId || !signatureBytes)
+    return { outcome: "invalid", problem: { reason: "invalid", host } };
 
   const key = await importShopifyKey(keyId);
-  if (!key) return null;
+  if (!key) return { outcome: "unverifiable" };
 
   // RFC 9421 signature base over what Shopify signs, ending with the
   // signature parameters exactly as they appear after the label.
@@ -51,12 +67,15 @@ export async function checkShopifySignature(input: {
       ),
     );
 
-  if (await verifiesFor(host)) return null;
+  if (await verifiesFor(host)) return { outcome: "valid" };
   const twinHost = host.startsWith("www.") ? host.slice(4) : `www.${host}`;
   if (await verifiesFor(twinHost)) {
-    return { reason: "wrong_domain", host, signedHost: twinHost };
+    return {
+      outcome: "invalid",
+      problem: { reason: "wrong_domain", host, signedHost: twinHost },
+    };
   }
-  return { reason: "invalid", host };
+  return { outcome: "invalid", problem: { reason: "invalid", host } };
 }
 
 /** The bytes of a `sig1=:<base64>:` value, or null if it isn't one. */

@@ -276,6 +276,47 @@ async function getCrawlProgress(auditId: string, projectId: string) {
   return AuditProgressKV.getCrawledUrls(auditId);
 }
 
+async function diagnoseDirectFetch(input: {
+  auditId: string;
+  projectId: string;
+  organizationId: string;
+}) {
+  const audit = await AuditRepository.getAuditForProject(
+    input.auditId,
+    input.projectId,
+  );
+  if (!audit) throw new AppError("NOT_FOUND");
+  const config = parseAuditConfig(audit.config);
+  if (!config?.crawlerCredentialId)
+    throw new AppError(
+      "NOT_FOUND",
+      "Audit has no selected crawler credential.",
+    );
+  const credential =
+    await CrawlerCredentialService.getCrawlerAccessForCredential(
+      input.organizationId,
+      config.crawlerCredentialId,
+    );
+  if (!credential)
+    throw new AppError(
+      "NOT_FOUND",
+      "Selected crawler credential is unavailable.",
+    );
+  const url = new URL(audit.startUrl);
+  url.pathname = "/";
+  url.search = "";
+  url.hash = "";
+  return {
+    auditId: audit.id,
+    credentialId: credential.id,
+    url: url.toString(),
+    result: await env.AUDIT_ENGINE.diagnoseDirectFetch({
+      url: url.toString(),
+      access: credential.sealed,
+    }),
+  };
+}
+
 async function remove(auditId: string, projectId: string) {
   const audit = await AuditRepository.getAuditForProject(auditId, projectId);
   if (!audit) {
@@ -332,6 +373,7 @@ export const AuditService = {
   startAudit,
   getStatus,
   getCrawlProgress,
+  diagnoseDirectFetch,
   getResults,
   getHistory,
   remove,
