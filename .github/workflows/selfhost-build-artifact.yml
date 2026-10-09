@@ -30,6 +30,15 @@ jobs:
       - name: Build self-host Workers and client
         run: pnpm vite build --mode selfhost
 
+      # The self-host deployment uses the prebuilt main Worker bundle. Profile
+      # that exact bundle on the runner so a Cloudflare startup rejection can
+      # be traced without rebuilding in the deploy environment.
+      - name: Profile main Worker startup
+        run: |
+          pnpm exec wrangler check startup \
+            --config dist/server/wrangler.json \
+            --outfile app-worker-startup.cpuprofile
+
       - name: Record source revision
         run: git rev-parse HEAD > build-commit.txt
 
@@ -40,5 +49,6 @@ jobs:
           path: |
             dist
             build-commit.txt
+            app-worker-startup.cpuprofile
           include-hidden-files: true
           retention-days: 1
