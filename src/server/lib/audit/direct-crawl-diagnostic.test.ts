@@ -74,4 +74,29 @@ describe("runDirectCrawlDiagnostic", () => {
       homepage: { status: 429, signatureAttached: true },
     });
   });
+
+  it("stops the sequence after a rate-limited discovery request", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 429 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runAuditSequenceDiagnostic("https://store.example/", {
+      host: "store.example",
+      expiresAt: null,
+      headers: {
+        "Signature-Input": "input",
+        Signature: "signature",
+        "Signature-Agent": '"https://shopify.com"',
+      },
+    });
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(result).toMatchObject({
+      robots: { status: 429, signatureAttached: true },
+      sitemap: null,
+      homepage: null,
+      stoppedAfter: "robots",
+    });
+  });
 });

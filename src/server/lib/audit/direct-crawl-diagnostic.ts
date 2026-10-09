@@ -23,8 +23,9 @@ type DiagnosticRequestOptions = {
 
 type AuditSequenceDiagnostic = {
   robots: DirectCrawlDiagnostic;
-  sitemap: DirectCrawlDiagnostic;
-  homepage: DirectCrawlDiagnostic;
+  sitemap: DirectCrawlDiagnostic | null;
+  homepage: DirectCrawlDiagnostic | null;
+  stoppedAfter: "robots" | "sitemap" | null;
 };
 
 export async function runDirectCrawlDiagnostic(
@@ -101,13 +102,30 @@ export async function runAuditSequenceDiagnostic(
   access: CrawlerAccess | null,
 ): Promise<AuditSequenceDiagnostic> {
   const origin = new URL(url).origin;
+  const robots = await runDirectCrawlDiagnostic(
+    `${origin}/robots.txt`,
+    access,
+    {
+      includeAccept: false,
+    },
+  );
+  if (robots.status === 429) {
+    return { robots, sitemap: null, homepage: null, stoppedAfter: "robots" };
+  }
+  const sitemap = await runDirectCrawlDiagnostic(
+    `${origin}/sitemap.xml`,
+    access,
+    {
+      includeAccept: false,
+    },
+  );
+  if (sitemap.status === 429) {
+    return { robots, sitemap, homepage: null, stoppedAfter: "sitemap" };
+  }
   return {
-    robots: await runDirectCrawlDiagnostic(`${origin}/robots.txt`, access, {
-      includeAccept: false,
-    }),
-    sitemap: await runDirectCrawlDiagnostic(`${origin}/sitemap.xml`, access, {
-      includeAccept: false,
-    }),
+    robots,
+    sitemap,
     homepage: await runDirectCrawlDiagnostic(url, access),
+    stoppedAfter: null,
   };
 }
