@@ -11,6 +11,12 @@
 // (vite-plugin-lean-worker-bundle.ts asserts this at build time).
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { getAuditScratchpad } from "@/server/features/audit/AuditScratchpad";
+import {
+  CrawlerCredentialService,
+  type SealedCrawlerAccess,
+} from "@/server/features/audit/services/CrawlerCredentialService";
+import { validateShopifySignature } from "@/server/features/audit/services/shopifySignature";
+import { runDirectCrawlDiagnostic } from "@/server/lib/audit/direct-crawl-diagnostic";
 
 export { SiteAuditWorkflow } from "./server/workflows/SiteAuditWorkflow";
 export { AuditScratchpad } from "./server/features/audit/AuditScratchpad";
@@ -29,5 +35,26 @@ export default class AuditEngine extends WorkerEntrypoint {
   /** Wipe an audit's crawl scratch state (storage + alarm). Idempotent. */
   async destroyScratchpad(auditId: string): Promise<void> {
     await getAuditScratchpad(auditId).destroy();
+  }
+
+  /** Private app-worker RPC for one authenticated, no-retry homepage check. */
+  async diagnoseDirectFetch(input: {
+    url: string;
+    access: SealedCrawlerAccess;
+  }) {
+    const access = await CrawlerCredentialService.openCrawlerAccess(
+      input.access,
+    );
+    if (!access) return { access: "decryption_failed" as const };
+    const validation = await validateShopifySignature({
+      host: access.host,
+      signatureInput: access.headers["Signature-Input"],
+      signature: access.headers.Signature,
+    });
+    return {
+      access: "opened" as const,
+      validation,
+      request: await runDirectCrawlDiagnostic(input.url, access),
+    };
   }
 }

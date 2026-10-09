@@ -93,3 +93,15 @@ export const getAuditCapabilities = createServerFn({ method: "POST" })
   .handler(async () => ({
     canRenderJavaScript: await isAuditRenderingAllowed(),
   }));
+
+/** One private, no-retry request for diagnosing a selected audit credential. */
+export const diagnoseAuditDirectFetch = createServerFn({ method: "POST" })
+  .middleware(requireProjectContext)
+  .validator(getAuditStatusSchema)
+  .handler(async ({ data, context }) =>
+    AuditService.diagnoseDirectFetch({
+      auditId: data.auditId,
+      projectId: context.projectId,
+      organizationId: context.organizationId,
+    }),
+  );

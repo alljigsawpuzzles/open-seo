@@ -14,7 +14,7 @@ import {
 import { Button } from "@/client/components/ui/button";
 import type { AuditResultsData } from "@/client/features/audit/results/types";
 import { extractHostname } from "@/client/features/audit/shared";
-import { startAudit } from "@/serverFunctions/audit";
+import { diagnoseAuditDirectFetch, startAudit } from "@/serverFunctions/audit";
 import { listCrawlerCredentials } from "@/serverFunctions/crawlerAccess";
 import {
   SHOPIFY_CRAWLER_ACCESS_DOC_URL,
@@ -87,6 +87,10 @@ export function ShopifyCrawlWarning({
       });
     },
   });
+  const diagnosticMutation = useMutation({
+    mutationFn: () =>
+      diagnoseAuditDirectFetch({ data: { projectId, auditId: audit.id } }),
+  });
 
   const rerunButton = (
     <Button
@@ -132,7 +136,26 @@ export function ShopifyCrawlWarning({
             </>
           )}
         </AlertDescription>
-        <div className="col-start-2 mt-2">{rerunButton}</div>
+        <div className="col-start-2 mt-2 flex flex-wrap items-center gap-2">
+          {rerunButton}
+          {signedAndStillLimited && (
+            <Button
+              variant="outline"
+              size="sm"
+              pending={diagnosticMutation.isPending}
+              onClick={() => diagnosticMutation.mutate()}
+            >
+              Check signed request
+            </Button>
+          )}
+          {diagnosticMutation.data && (
+            <span className="text-sm">
+              {diagnosticMutation.data.result.access === "opened"
+                ? `HTTP ${diagnosticMutation.data.result.request.status ?? "network error"}; signature ${diagnosticMutation.data.result.request.signatureAttached ? "attached" : "not attached"}; validation ${diagnosticMutation.data.result.validation.outcome}.`
+                : "Credential decryption failed."}
+            </span>
+          )}
+        </div>
       </Alert>
     );
   }
