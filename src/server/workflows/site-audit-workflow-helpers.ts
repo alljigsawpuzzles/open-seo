@@ -7,6 +7,7 @@ import { sha256Hex } from "@/server/lib/audit/ids";
 import { normalizeUrl } from "@/server/lib/audit/url-utils";
 import type { CrawlThrottle } from "@/server/lib/audit/crawl-throttle";
 import { crawlerHeadersFor, type CrawlerAccess } from "@/shared/crawler-access";
+import type { AuditFetchDiagnostics } from "@/server/lib/audit/fetch-diagnostics";
 
 const CRAWL_USER_AGENT = "OpenSEO-Audit/1.0";
 
@@ -35,6 +36,8 @@ async function fetchPage(
   url: string,
   throttle: CrawlThrottle,
   crawlerHeaders: Record<string, string>,
+  diagnostics?: AuditFetchDiagnostics,
+  access?: CrawlerAccess | null,
 ) {
   for (let attempt = 1; ; attempt++) {
     if (!(await throttle.ready())) return null;
@@ -45,14 +48,53 @@ async function fetchPage(
     // /docs/) need no special handling: normalizeUrl preserves trailing
     // slashes, so /docs and /docs/ are distinct URLs and the redirect resolves
     // to its canonical target instead of cycling back to its own source.
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": CRAWL_USER_AGENT,
-        Accept: "text/html,application/xhtml+xml",
-        ...crawlerHeaders,
-      },
-      redirect: "manual",
-      signal: AbortSignal.timeout(15_000),
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: {
+          "User-Agent": CRAWL_USER_AGENT,
+          Accept: "text/html,application/xhtml+xml",
+          ...crawlerHeaders,
+        },
+        redirect: "manual",
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch (error) {
+      diagnostics?.record({
+        phase: "crawl",
+        attempt,
+        url,
+        access,
+        startedAt,
+        durationMs: Date.now() - startedAt,
+        status: null,
+        redirectLocation: null,
+        retryAfter: null,
+        cfCacheStatus: null,
+        cfRay: null,
+        requestId: null,
+        errorCategory:
+          error instanceof Error &&
+          (error.name === "AbortError" || error.name === "TimeoutError")
+            ? "timeout"
+            : "network",
+      });
+      throw error;
+    }
+    diagnostics?.record({
+      phase: "crawl",
+      attempt,
+      url,
+      access,
+      startedAt,
+      durationMs: Date.now() - startedAt,
+      status: response.status,
+      redirectLocation: response.headers.get("location"),
+      retryAfter: response.headers.get("retry-after"),
+      cfCacheStatus: response.headers.get("cf-cache-status"),
+      cfRay: response.headers.get("cf-ray"),
+      requestId: response.headers.get("x-request-id"),
+      errorCategory: "http_response",
     });
     const result = {
       response,
@@ -88,9 +130,11 @@ export async function crawlPage(
     render?: (url: string) => Promise<RenderedPage>;
     /** Correlates safe fetch diagnostics with one audit in Workers logs. */
     auditId?: string;
+    /** Bounded signed-audit request timeline. */
+    diagnostics?: AuditFetchDiagnostics;
   } = {},
 ): Promise<CrawledPageResult | null> {
-  const { access, render, auditId } = options;
+  const { access, render, auditId, diagnostics } = options;
   const startTime = Date.now();
   // Calculate once for this request, so the boolean we log describes the
   // exact header set passed to fetch without ever retaining its values.
@@ -101,7 +145,13 @@ export async function crawlPage(
   let renderAttempted = false;
 
   try {
-    const fetched = await fetchPage(url, throttle, crawlerHeaders);
+    const fetched = await fetchPage(
+      url,
+      throttle,
+      crawlerHeaders,
+      diagnostics,
+      access,
+    );
     if (!fetched) return null;
     const { response, responseTimeMs, rateLimited } = fetched;
     statusCode = response.status;

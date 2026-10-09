@@ -30,6 +30,7 @@ import {
   SETTLE_RENDERING_STEP,
 } from "@/server/workflows/auditStepConfigs";
 import type { RenderUsage } from "@/shared/audit-rendering";
+import { createAuditFetchDiagnostics } from "@/server/lib/audit/fetch-diagnostics";
 
 interface AuditParams {
   auditId: string;
@@ -88,6 +89,8 @@ export class SiteAuditWorkflow extends WorkflowEntrypoint<Env, AuditParams> {
         }
       });
 
+      const openedAccess =
+        await CrawlerCredentialService.openCrawlerAccess(access);
       await runAuditPhases(step, {
         auditId,
         workflowInstanceId: event.instanceId,
@@ -95,8 +98,9 @@ export class SiteAuditWorkflow extends WorkflowEntrypoint<Env, AuditParams> {
         projectId,
         startUrl,
         config,
-        access: await CrawlerCredentialService.openCrawlerAccess(access),
+        access: openedAccess,
         renderUsage,
+        diagnostics: createAuditFetchDiagnostics(auditId, openedAccess),
       });
     } catch (error) {
       console.error(`Audit ${auditId} failed:`, error);

@@ -21,6 +21,7 @@ import type { DetectedIssue } from "@/server/lib/audit/issues/page-reporters";
 import type { AuditConfig } from "@/server/lib/audit/types";
 import type { CrawlerAccess } from "@/shared/crawler-access";
 import type { RenderUsage } from "@/shared/audit-rendering";
+import type { AuditFetchDiagnostics } from "@/server/lib/audit/fetch-diagnostics";
 import { captureServerEvent } from "@/server/lib/posthog";
 import {
   runCrawlPhase,
@@ -53,6 +54,7 @@ type AuditPhasesParams = {
   config: AuditConfig;
   access?: CrawlerAccess | null;
   renderUsage: RenderUsage;
+  diagnostics?: AuditFetchDiagnostics;
 };
 
 export async function runAuditPhases(
@@ -68,6 +70,7 @@ export async function runAuditPhases(
     config,
     access,
     renderUsage,
+    diagnostics,
   } = params;
   const origin = getOrigin(startUrl);
   const maxPages = config.maxPages;
@@ -79,6 +82,7 @@ export async function runAuditPhases(
     startUrl,
     maxPages,
     access,
+    diagnostics,
   });
   // Parsed outside the step from checkpointed text, so replays see the exact
   // robots rules the original run used (a live re-fetch could differ and
@@ -94,6 +98,7 @@ export async function runAuditPhases(
     renderJavaScript: config.renderJavaScript,
     renderUsage,
     access,
+    diagnostics,
   });
   await runLighthousePhase(step, {
     auditId,

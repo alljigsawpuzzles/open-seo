@@ -61,6 +61,37 @@ describe("crawlPage", () => {
     expect(page?.rateLimited).toBe(true);
   });
 
+  it("reports every crawl attempt to bounded audit diagnostics", async () => {
+    vi.useFakeTimers();
+    stubFetch({ status: 429, retryAfter: "5" }, { status: 200 });
+    const diagnostics = { record: vi.fn() };
+
+    const crawled = crawlPage(
+      PAGE_URL,
+      0,
+      false,
+      createCrawlThrottle(Date.now() + 90_000),
+      { diagnostics },
+    );
+    await vi.advanceTimersByTimeAsync(6_000);
+    await crawled;
+
+    expect(diagnostics.record).toHaveBeenCalledTimes(2);
+    expect(diagnostics.record).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        phase: "crawl",
+        attempt: 1,
+        status: 429,
+        retryAfter: "5",
+      }),
+    );
+    expect(diagnostics.record).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ phase: "crawl", attempt: 2, status: 200 }),
+    );
+  });
+
   it("records a page the site keeps rate limiting, without calling it blocked", async () => {
     vi.useFakeTimers();
     const fetchMock = stubFetch({ status: 429, retryAfter: "1" });
