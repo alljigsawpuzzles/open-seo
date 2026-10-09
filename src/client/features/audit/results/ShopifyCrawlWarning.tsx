@@ -14,7 +14,11 @@ import {
 import { Button } from "@/client/components/ui/button";
 import type { AuditResultsData } from "@/client/features/audit/results/types";
 import { extractHostname } from "@/client/features/audit/shared";
-import { diagnoseAuditDirectFetch, startAudit } from "@/serverFunctions/audit";
+import {
+  diagnoseAuditDirectFetch,
+  diagnoseAuditSequence,
+  startAudit,
+} from "@/serverFunctions/audit";
 import { listCrawlerCredentials } from "@/serverFunctions/crawlerAccess";
 import {
   SHOPIFY_CRAWLER_ACCESS_DOC_URL,
@@ -91,6 +95,10 @@ export function ShopifyCrawlWarning({
     mutationFn: () =>
       diagnoseAuditDirectFetch({ data: { projectId, auditId: audit.id } }),
   });
+  const sequenceMutation = useMutation({
+    mutationFn: () =>
+      diagnoseAuditSequence({ data: { projectId, auditId: audit.id } }),
+  });
 
   const rerunButton = (
     <Button
@@ -139,14 +147,24 @@ export function ShopifyCrawlWarning({
         <div className="col-start-2 mt-2 flex flex-wrap items-center gap-2">
           {rerunButton}
           {signedAndStillLimited && (
-            <Button
-              variant="outline"
-              size="sm"
-              pending={diagnosticMutation.isPending}
-              onClick={() => diagnosticMutation.mutate()}
-            >
-              Check signed request
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                pending={diagnosticMutation.isPending}
+                onClick={() => diagnosticMutation.mutate()}
+              >
+                Check signed request
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                pending={sequenceMutation.isPending}
+                onClick={() => sequenceMutation.mutate()}
+              >
+                Check audit sequence
+              </Button>
+            </>
           )}
           {diagnosticMutation.data && (
             <span className="text-sm">
@@ -154,6 +172,21 @@ export function ShopifyCrawlWarning({
                 ? `HTTP ${diagnosticMutation.data.result.request.status ?? "network error"}; signature ${diagnosticMutation.data.result.request.signatureAttached ? "attached" : "not attached"}; validation ${diagnosticMutation.data.result.validation.outcome}.`
                 : "Credential decryption failed."}
             </span>
+          )}
+          {sequenceMutation.data?.result.access === "opened" && (
+            <span className="text-sm">
+              Audit sequence: probe{" "}
+              {sequenceMutation.data.result.appProbe.status ?? "error"}; robots{" "}
+              {sequenceMutation.data.result.requests.robots.status ?? "error"};
+              sitemap{" "}
+              {sequenceMutation.data.result.requests.sitemap.status ?? "error"};
+              homepage{" "}
+              {sequenceMutation.data.result.requests.homepage.status ?? "error"}
+              .
+            </span>
+          )}
+          {sequenceMutation.data?.result.access === "decryption_failed" && (
+            <span className="text-sm">Credential decryption failed.</span>
           )}
         </div>
       </Alert>

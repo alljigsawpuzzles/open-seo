@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { waitUntil } from "cloudflare:workers";
 import { requireOrgPermission } from "@/server/auth/org-gate";
 import { AuditService } from "@/server/features/audit/services/AuditService";
+import { AuditSequenceDiagnosticService } from "@/server/features/audit/services/AuditSequenceDiagnosticService";
 import { captureServerEvent } from "@/server/lib/posthog";
 import { requireProjectContext } from "@/serverFunctions/middleware";
 import {
@@ -100,6 +101,18 @@ export const diagnoseAuditDirectFetch = createServerFn({ method: "POST" })
   .validator(getAuditStatusSchema)
   .handler(async ({ data, context }) =>
     AuditService.diagnoseDirectFetch({
+      auditId: data.auditId,
+      projectId: context.projectId,
+      organizationId: context.organizationId,
+    }),
+  );
+
+/** One bounded reproduction of the audit's preflight and first fetch. */
+export const diagnoseAuditSequence = createServerFn({ method: "POST" })
+  .middleware(requireProjectContext)
+  .validator(getAuditStatusSchema)
+  .handler(async ({ data, context }) =>
+    AuditSequenceDiagnosticService.diagnoseAuditSequence({
       auditId: data.auditId,
       projectId: context.projectId,
       organizationId: context.organizationId,
