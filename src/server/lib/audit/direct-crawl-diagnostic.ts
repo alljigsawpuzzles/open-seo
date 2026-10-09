@@ -16,9 +16,21 @@ type DirectCrawlDiagnostic = {
   errorCategory: "http_response" | "network" | "timeout";
 };
 
+type DiagnosticRequestOptions = {
+  method?: "GET" | "HEAD";
+  includeAccept?: boolean;
+};
+
+type AuditSequenceDiagnostic = {
+  robots: DirectCrawlDiagnostic;
+  sitemap: DirectCrawlDiagnostic;
+  homepage: DirectCrawlDiagnostic;
+};
+
 export async function runDirectCrawlDiagnostic(
   url: string,
   access: CrawlerAccess | null,
+  options: DiagnosticRequestOptions = {},
 ): Promise<DirectCrawlDiagnostic> {
   const crawlerHeaders = crawlerHeadersFor(url, access);
   const hasHeader = (name: string) =>
@@ -32,9 +44,12 @@ export async function runDirectCrawlDiagnostic(
   const timestamp = new Date(started).toISOString();
   try {
     const response = await fetch(url, {
+      method: options.method,
       headers: {
         "User-Agent": "OpenSEO-Audit/1.0",
-        Accept: "text/html,application/xhtml+xml",
+        ...(options.includeAccept === false
+          ? {}
+          : { Accept: "text/html,application/xhtml+xml" }),
         ...crawlerHeaders,
       },
       redirect: "manual",
@@ -74,4 +89,25 @@ export async function runDirectCrawlDiagnostic(
           : "network",
     };
   }
+}
+
+/**
+ * One pass through the audit worker's discovery requests and first page fetch.
+ * It deliberately makes no retries, follows no redirects, and returns no
+ * credential values or response bodies.
+ */
+export async function runAuditSequenceDiagnostic(
+  url: string,
+  access: CrawlerAccess | null,
+): Promise<AuditSequenceDiagnostic> {
+  const origin = new URL(url).origin;
+  return {
+    robots: await runDirectCrawlDiagnostic(`${origin}/robots.txt`, access, {
+      includeAccept: false,
+    }),
+    sitemap: await runDirectCrawlDiagnostic(`${origin}/sitemap.xml`, access, {
+      includeAccept: false,
+    }),
+    homepage: await runDirectCrawlDiagnostic(url, access),
+  };
 }

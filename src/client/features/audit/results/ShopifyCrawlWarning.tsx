@@ -14,12 +14,33 @@ import {
 import { Button } from "@/client/components/ui/button";
 import type { AuditResultsData } from "@/client/features/audit/results/types";
 import { extractHostname } from "@/client/features/audit/shared";
-import { diagnoseAuditDirectFetch, startAudit } from "@/serverFunctions/audit";
+import {
+  diagnoseAuditDirectFetch,
+  diagnoseAuditSequence,
+  startAudit,
+} from "@/serverFunctions/audit";
 import { listCrawlerCredentials } from "@/serverFunctions/crawlerAccess";
 import {
   SHOPIFY_CRAWLER_ACCESS_DOC_URL,
   isCrawlerAccessExpired,
 } from "@/shared/crawler-access";
+
+function requestSummary(request: {
+  timestamp: string;
+  status: number | null;
+  durationMs: number;
+  signatureAttached: boolean;
+  headerPresence: Record<string, boolean>;
+  redirectLocation: string | null;
+  retryAfter: string | null;
+  cfCacheStatus: string | null;
+  requestIds: { cfRay: string | null; requestId: string | null };
+}) {
+  const headers = Object.values(request.headerPresence).every(Boolean)
+    ? "all signature headers present"
+    : "signature header missing";
+  return `UTC ${request.timestamp}; HTTP ${request.status ?? "network error"}; ${request.durationMs} ms; ${request.signatureAttached ? "signature attached" : "signature not attached"}; ${headers}; redirect ${request.redirectLocation ?? "none"}; Retry-After ${request.retryAfter ?? "absent"}; cache ${request.cfCacheStatus ?? "unknown"}; cf-ray ${request.requestIds.cfRay ?? "absent"}; request ID ${request.requestIds.requestId ?? "absent"}.`;
+}
 
 /**
  * Shown instead of the generic crawl warnings when a Shopify storefront
@@ -91,6 +112,10 @@ export function ShopifyCrawlWarning({
     mutationFn: () =>
       diagnoseAuditDirectFetch({ data: { projectId, auditId: audit.id } }),
   });
+  const sequenceMutation = useMutation({
+    mutationFn: () =>
+      diagnoseAuditSequence({ data: { projectId, auditId: audit.id } }),
+  });
 
   const rerunButton = (
     <Button
@@ -139,21 +164,47 @@ export function ShopifyCrawlWarning({
         <div className="col-start-2 mt-2 flex flex-wrap items-center gap-2">
           {rerunButton}
           {signedAndStillLimited && (
-            <Button
-              variant="outline"
-              size="sm"
-              pending={diagnosticMutation.isPending}
-              onClick={() => diagnosticMutation.mutate()}
-            >
-              Check signed request
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                pending={diagnosticMutation.isPending}
+                onClick={() => diagnosticMutation.mutate()}
+              >
+                Check signed request
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                pending={sequenceMutation.isPending}
+                onClick={() => sequenceMutation.mutate()}
+              >
+                Check audit sequence
+              </Button>
+            </>
           )}
           {diagnosticMutation.data && (
             <span className="text-sm">
               {diagnosticMutation.data.result.access === "opened"
-                ? `HTTP ${diagnosticMutation.data.result.request.status ?? "network error"}; signature ${diagnosticMutation.data.result.request.signatureAttached ? "attached" : "not attached"}; validation ${diagnosticMutation.data.result.validation.outcome}.`
+                ? `${requestSummary(diagnosticMutation.data.result.request)} Validation ${diagnosticMutation.data.result.validation.outcome}; credential fingerprint ${diagnosticMutation.data.result.credentialFingerprint}.`
                 : "Credential decryption failed."}
             </span>
+          )}
+          {sequenceMutation.data?.result.access === "opened" && (
+            <span className="text-sm">
+              Credential fingerprint{" "}
+              {sequenceMutation.data.result.credentialFingerprint}; validation{" "}
+              {sequenceMutation.data.result.validation.outcome}. Probe:{" "}
+              {requestSummary(sequenceMutation.data.result.appProbe)} Robots:{" "}
+              {requestSummary(sequenceMutation.data.result.requests.robots)}{" "}
+              Sitemap:{" "}
+              {requestSummary(sequenceMutation.data.result.requests.sitemap)}{" "}
+              Homepage:{" "}
+              {requestSummary(sequenceMutation.data.result.requests.homepage)}
+            </span>
+          )}
+          {sequenceMutation.data?.result.access === "decryption_failed" && (
+            <span className="text-sm">Credential decryption failed.</span>
           )}
         </div>
       </Alert>

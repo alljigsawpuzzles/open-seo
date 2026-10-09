@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { runDirectCrawlDiagnostic } from "./direct-crawl-diagnostic";
+import {
+  runAuditSequenceDiagnostic,
+  runDirectCrawlDiagnostic,
+} from "./direct-crawl-diagnostic";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -38,6 +41,37 @@ describe("runDirectCrawlDiagnostic", () => {
       },
       retryAfter: "30",
       cfCacheStatus: "DYNAMIC",
+    });
+  });
+
+  it("makes the discovery and homepage requests once each without retries", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 429 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runAuditSequenceDiagnostic("https://store.example/", {
+      host: "store.example",
+      expiresAt: null,
+      headers: {
+        "Signature-Input": "input",
+        Signature: "signature",
+        "Signature-Agent": '"https://shopify.com"',
+      },
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      "https://store.example/robots.txt",
+      "https://store.example/sitemap.xml",
+      "https://store.example/",
+    ]);
+    expect(result).toMatchObject({
+      robots: { status: 200, signatureAttached: true },
+      sitemap: { status: 200, signatureAttached: true },
+      homepage: { status: 429, signatureAttached: true },
     });
   });
 });
