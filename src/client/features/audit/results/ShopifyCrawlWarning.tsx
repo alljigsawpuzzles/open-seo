@@ -25,17 +25,20 @@ import {
   isCrawlerAccessExpired,
 } from "@/shared/crawler-access";
 
-function requestSummary(request: {
-  timestamp: string;
-  status: number | null;
-  durationMs: number;
-  signatureAttached: boolean;
-  headerPresence: Record<string, boolean>;
-  redirectLocation: string | null;
-  retryAfter: string | null;
-  cfCacheStatus: string | null;
-  requestIds: { cfRay: string | null; requestId: string | null };
-}) {
+function requestSummary(
+  request: {
+    timestamp: string;
+    status: number | null;
+    durationMs: number;
+    signatureAttached: boolean;
+    headerPresence: Record<string, boolean>;
+    redirectLocation: string | null;
+    retryAfter: string | null;
+    cfCacheStatus: string | null;
+    requestIds: { cfRay: string | null; requestId: string | null };
+  } | null,
+) {
+  if (!request) return "not attempted";
   const headers = Object.values(request.headerPresence).every(Boolean)
     ? "all signature headers present"
     : "signature header missing";
@@ -196,11 +199,20 @@ export function ShopifyCrawlWarning({
               {sequenceMutation.data.result.credentialFingerprint}; validation{" "}
               {sequenceMutation.data.result.validation.outcome}. Probe:{" "}
               {requestSummary(sequenceMutation.data.result.appProbe)} Robots:{" "}
-              {requestSummary(sequenceMutation.data.result.requests.robots)}{" "}
+              {requestSummary(
+                sequenceMutation.data.result.requests?.robots ?? null,
+              )}{" "}
               Sitemap:{" "}
-              {requestSummary(sequenceMutation.data.result.requests.sitemap)}{" "}
+              {requestSummary(
+                sequenceMutation.data.result.requests?.sitemap ?? null,
+              )}{" "}
               Homepage:{" "}
-              {requestSummary(sequenceMutation.data.result.requests.homepage)}
+              {requestSummary(
+                sequenceMutation.data.result.requests?.homepage ?? null,
+              )}
+              {sequenceMutation.data.result.stoppedAfter
+                ? ` Stopped after ${sequenceMutation.data.result.stoppedAfter} received HTTP 429.`
+                : null}
             </span>
           )}
           {sequenceMutation.data?.result.access === "decryption_failed" && (
