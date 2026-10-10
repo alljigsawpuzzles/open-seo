@@ -77,12 +77,14 @@ async function fetchFollowingRedirects(
   access: CrawlerAccess | null | undefined,
   diagnostics?: AuditFetchDiagnostics,
   phase: AuditFetchPhase = "sitemap",
+  attempt = 1,
 ): Promise<{ response: Response; finalUrl: string } | null> {
   // One budget for the whole chain, as the automatic follow had.
   const deadline = Date.now() + timeoutMs;
   let current = url;
   for (let hop = 0; hop <= MAX_DISCOVERY_REDIRECT_HOPS; hop++) {
     const startedAt = Date.now();
+    const request = diagnostics?.begin?.();
     const headers = crawlerHeadersFor(current, access);
     try {
       const response = await fetch(current, {
@@ -92,9 +94,11 @@ async function fetchFollowingRedirects(
       });
       diagnostics?.record({
         phase,
-        attempt: hop + 1,
+        attempt,
+        redirectHop: hop,
+        request,
         url: current,
-        access,
+        requestHeaders: headers,
         startedAt,
         durationMs: Date.now() - startedAt,
         status: response.status,
@@ -125,9 +129,11 @@ async function fetchFollowingRedirects(
     } catch (error) {
       diagnostics?.record({
         phase,
-        attempt: hop + 1,
+        attempt,
+        redirectHop: hop,
+        request,
         url: current,
-        access,
+        requestHeaders: headers,
         startedAt,
         durationMs: Date.now() - startedAt,
         status: null,
@@ -277,6 +283,8 @@ async function fetchSitemapDocumentWithRetry(
         SITEMAP_FETCH_TIMEOUT_MS,
         access,
         diagnostics,
+        "sitemap",
+        attempt + 1,
       );
       if (!fetched) {
         return { nestedSitemaps: [], pageUrls: [], timedOut: false };

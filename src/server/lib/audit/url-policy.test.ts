@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createAuditFetchDiagnostics } from "@/server/lib/audit/fetch-diagnostics";
+import { shopifyCrawlerHeaders } from "@/shared/crawler-access";
 import type { AppError } from "@/server/lib/errors";
 import {
   normalizeAndValidateStartUrl,
@@ -65,6 +67,43 @@ describe("resolveStartUrlRedirects", () => {
         : Promise.resolve(new Response(null, { status: 200 }));
     });
   }
+
+  it("records a signed HEAD 429 without changing probe fallback behaviour", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(null, {
+        status: 429,
+        headers: { "cf-ray": "probe-ray", "retry-after": "30" },
+      }),
+    );
+    const access = {
+      host: "example.com",
+      expiresAt: null,
+      headers: shopifyCrawlerHeaders("sig1=(...)", "sig1=:private:"),
+    };
+    await expect(
+      resolveStartUrlRedirects(
+        "https://example.com/",
+        access,
+        createAuditFetchDiagnostics("probe-audit"),
+      ),
+    ).resolves.toEqual({ url: "https://example.com/", poweredBy: null });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetch).mock.calls[0][1]?.method).toBe("HEAD");
+    expect(info).toHaveBeenCalledWith(
+      "site_audit:fetch",
+      expect.objectContaining({
+        auditId: "probe-audit",
+        phase: "probe",
+        method: "HEAD",
+        status: 429,
+        signatureAttached: true,
+        retryAfter: "30",
+        requestIds: { cfRay: "probe-ray", requestId: null },
+      }),
+    );
+    expect(JSON.stringify(info.mock.calls)).not.toContain("sig1=:private:");
+  });
 
   it("follows a cross-domain redirect to the real origin", async () => {
     stubFetch({

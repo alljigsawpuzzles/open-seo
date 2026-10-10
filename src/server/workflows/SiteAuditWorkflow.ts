@@ -100,7 +100,7 @@ export class SiteAuditWorkflow extends WorkflowEntrypoint<Env, AuditParams> {
         config,
         access: openedAccess,
         renderUsage,
-        diagnostics: createAuditFetchDiagnostics(auditId, openedAccess),
+        diagnostics: createAuditFetchDiagnostics(auditId),
       });
     } catch (error) {
       console.error(`Audit ${auditId} failed:`, error);

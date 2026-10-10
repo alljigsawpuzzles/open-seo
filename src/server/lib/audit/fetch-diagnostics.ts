@@ -1,15 +1,22 @@
-import { sha256Hex } from "@/server/lib/audit/ids";
-import type { CrawlerAccess } from "@/shared/crawler-access";
+import { createHash } from "node:crypto";
 
-const MAX_FETCH_DIAGNOSTICS = 48;
+const MAX_SUCCESS_DIAGNOSTICS = 48;
+const MAX_ERROR_DIAGNOSTICS = 48;
 
-export type AuditFetchPhase = "robots" | "sitemap" | "crawl";
+export type AuditFetchPhase = "probe" | "robots" | "sitemap" | "crawl";
+
+type RequestTiming = {
+  sequence: number;
+  inFlightAtStart: number;
+};
 
 type FetchOutcome = {
   phase: AuditFetchPhase;
   attempt: number;
+  redirectHop?: number;
+  request?: RequestTiming;
   url: string;
-  access?: CrawlerAccess | null;
+  requestHeaders: Record<string, string>;
   startedAt: number;
   durationMs: number;
   status: number | null;
@@ -22,67 +29,81 @@ type FetchOutcome = {
 };
 
 export type AuditFetchDiagnostics = {
+  begin?(): RequestTiming;
   record(outcome: FetchOutcome): void;
 };
 
-/**
- * Emits a bounded, safe request timeline for signed audits. The counter is
- * deliberately per workflow invocation: a replay has its own timestamped
- * timeline, while one slow or sitemap-heavy audit cannot flood logs.
- */
+/** Safe metadata only; logging is synchronous so Workflow completion cannot drop it. */
 export function createAuditFetchDiagnostics(
   auditId: string,
-  access: CrawlerAccess | null,
-): AuditFetchDiagnostics | undefined {
-  if (!access) return undefined;
-
-  let emitted = 0;
+): AuditFetchDiagnostics {
+  let started = 0;
+  let active = 0;
+  let successes = 0;
+  let errors = 0;
   return {
+    begin() {
+      return { sequence: ++started, inFlightAtStart: ++active };
+    },
     record(outcome) {
-      // Keep the first part of the sequence, but always retain an error after
-      // the normal cap so the first observable rate limit is not lost.
+      if (outcome.request) active = Math.max(0, active - 1);
       const important = outcome.status === null || outcome.status >= 400;
-      if (emitted >= MAX_FETCH_DIAGNOSTICS && !important) return;
-      emitted += 1;
-
-      const parsed = new URL(outcome.url);
-      const headers = outcome.access?.headers;
-      const headerPresence = {
-        "Signature-Input": Boolean(headers?.["Signature-Input"]),
-        Signature: Boolean(headers?.Signature),
-        "Signature-Agent": Boolean(headers?.["Signature-Agent"]),
-      };
-      const sequence = emitted;
-      // The URL path can contain customer data. Hash it asynchronously so
-      // diagnostics do not add latency to crawling or retain raw paths.
-      void sha256Hex(outcome.url).then((urlFingerprint) => {
+      if (
+        important
+          ? errors++ >= MAX_ERROR_DIAGNOSTICS
+          : successes++ >= MAX_SUCCESS_DIAGNOSTICS
+      )
+        return;
+      // Diagnostic parsing must never change the request's control flow.
+      try {
+        const parsed = new URL(outcome.url);
+        const headers = new Headers(outcome.requestHeaders);
+        let redirectHostname: string | null = null;
+        if (outcome.redirectLocation) {
+          try {
+            redirectHostname = new URL(outcome.redirectLocation, outcome.url)
+              .hostname;
+          } catch {
+            /* malformed Location remains observable as a redirect */
+          }
+        }
         console.info("site_audit:fetch", {
           auditId,
-          sequence,
+          sequence: outcome.request?.sequence,
+          inFlightAtStart: outcome.request?.inFlightAtStart,
           timestamp: new Date(outcome.startedAt).toISOString(),
           phase: outcome.phase,
+          method: outcome.phase === "probe" ? "HEAD" : "GET",
           attempt: outcome.attempt,
+          redirectHop: outcome.redirectHop ?? 0,
           hostname: parsed.hostname,
-          urlFingerprint: urlFingerprint.slice(0, 16),
+          urlFingerprint: createHash("sha256")
+            .update(outcome.url)
+            .digest("hex")
+            .slice(0, 16),
           status: outcome.status,
           durationMs: outcome.durationMs,
-          signatureAttached: headerPresence.Signature,
-          headerPresence,
+          signatureAttached: headers.has("Signature"),
+          headerPresence: {
+            "Signature-Input": headers.has("Signature-Input"),
+            Signature: headers.has("Signature"),
+            "Signature-Agent": headers.has("Signature-Agent"),
+          },
           redirectOutcome: outcome.redirectLocation
             ? "redirect"
             : "not_followed",
-          redirectHostname: outcome.redirectLocation
-            ? new URL(outcome.redirectLocation, outcome.url).hostname
-            : null,
+          redirectHostname,
           retryAfter: outcome.retryAfter,
           cfCacheStatus: outcome.cfCacheStatus,
-          requestIds: {
-            cfRay: outcome.cfRay,
-            requestId: outcome.requestId,
-          },
+          requestIds: { cfRay: outcome.cfRay, requestId: outcome.requestId },
           errorCategory: outcome.errorCategory,
         });
-      });
+      } catch {
+        console.warn("site_audit:diagnostic_unavailable", {
+          auditId,
+          phase: outcome.phase,
+        });
+      }
     },
   };
 }

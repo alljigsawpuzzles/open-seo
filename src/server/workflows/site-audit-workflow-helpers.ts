@@ -37,7 +37,6 @@ async function fetchPage(
   throttle: CrawlThrottle,
   crawlerHeaders: Record<string, string>,
   diagnostics?: AuditFetchDiagnostics,
-  access?: CrawlerAccess | null,
 ) {
   for (let attempt = 1; ; attempt++) {
     if (!(await throttle.ready())) return null;
@@ -48,6 +47,7 @@ async function fetchPage(
     // /docs/) need no special handling: normalizeUrl preserves trailing
     // slashes, so /docs and /docs/ are distinct URLs and the redirect resolves
     // to its canonical target instead of cycling back to its own source.
+    const request = diagnostics?.begin?.();
     let response: Response;
     try {
       response = await fetch(url, {
@@ -62,9 +62,10 @@ async function fetchPage(
     } catch (error) {
       diagnostics?.record({
         phase: "crawl",
+        request,
         attempt,
         url,
-        access,
+        requestHeaders: crawlerHeaders,
         startedAt,
         durationMs: Date.now() - startedAt,
         status: null,
@@ -83,9 +84,10 @@ async function fetchPage(
     }
     diagnostics?.record({
       phase: "crawl",
+      request,
       attempt,
       url,
-      access,
+      requestHeaders: crawlerHeaders,
       startedAt,
       durationMs: Date.now() - startedAt,
       status: response.status,
@@ -145,13 +147,7 @@ export async function crawlPage(
   let renderAttempted = false;
 
   try {
-    const fetched = await fetchPage(
-      url,
-      throttle,
-      crawlerHeaders,
-      diagnostics,
-      access,
-    );
+    const fetched = await fetchPage(url, throttle, crawlerHeaders, diagnostics);
     if (!fetched) return null;
     const { response, responseTimeMs, rateLimited } = fetched;
     statusCode = response.status;

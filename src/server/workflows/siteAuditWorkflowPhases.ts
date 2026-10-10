@@ -129,16 +129,24 @@ async function runDiscoveryPhase(
     startUrl: string;
     maxPages: number;
     access?: CrawlerAccess | null;
+    diagnostics?: AuditFetchDiagnostics;
   },
 ) {
-  const { auditId, workflowInstanceId, origin, startUrl, maxPages, access } =
-    input;
+  const {
+    auditId,
+    workflowInstanceId,
+    origin,
+    startUrl,
+    maxPages,
+    access,
+    diagnostics,
+  } = input;
   // "-v2": the checkpoint shape changed (seeds now live in the scratchpad DO
   // instead of the step return). A pre-refactor instance replayed under this
   // code must re-run discovery — resuming from the old cached {sitemapUrls}
   // shape would leave the scratchpad empty and finalize a zero-page audit.
   return pgStep(step, "discover-urls-v2", DISCOVERY_STEP, async () => {
-    const result = await discoverUrls(origin, maxPages, access);
+    const result = await discoverUrls(origin, maxPages, access, diagnostics);
     const robots = parseRobotsTxt(origin, result.robotsText);
     const scratchpad = getAuditScratchpad(auditId);
 
