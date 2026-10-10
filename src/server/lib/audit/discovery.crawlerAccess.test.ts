@@ -27,7 +27,7 @@ describe("discoverUrls crawler access", () => {
   it("records concurrent sitemap fetches in request-start order", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
     vi.mocked(fetch).mockImplementation(async (input) => {
-      const url = String(input);
+      const url = input instanceof Request ? input.url : input.toString();
       if (url.endsWith("robots.txt")) return new Response("", { status: 200 });
       if (url.endsWith("/sitemap.xml"))
         return new Response(
@@ -53,11 +53,13 @@ describe("discoverUrls crawler access", () => {
         "https://store.example.com/two",
       ]),
     );
-    const events = info.mock.calls
-      .filter((call) => call[0] === "site_audit:fetch")
-      .map((call) => call[1]);
-    expect(events.map((event) => event.sequence)).toEqual([1, 2, 3, 4]);
-    expect(events.map((event) => event.inFlightAtStart)).toEqual([1, 1, 1, 2]);
+    for (const [index, inFlightAtStart] of [1, 1, 1, 2].entries()) {
+      expect(info).toHaveBeenNthCalledWith(
+        index + 1,
+        "site_audit:fetch",
+        expect.objectContaining({ sequence: index + 1, inFlightAtStart }),
+      );
+    }
   });
 
   it("drops the signature when robots.txt redirects to another host", async () => {

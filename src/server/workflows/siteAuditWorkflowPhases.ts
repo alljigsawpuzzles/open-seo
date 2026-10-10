@@ -76,13 +76,9 @@ export async function runAuditPhases(
   const maxPages = config.maxPages;
 
   const discovery = await runDiscoveryPhase(step, {
-    auditId,
-    workflowInstanceId,
+    ...params,
     origin,
-    startUrl,
     maxPages,
-    access,
-    diagnostics,
   });
   // Parsed outside the step from checkpointed text, so replays see the exact
   // robots rules the original run used (a live re-fetch could differ and
@@ -122,31 +118,20 @@ export async function runAuditPhases(
 
 async function runDiscoveryPhase(
   step: WorkflowStep,
-  input: {
-    auditId: string;
-    workflowInstanceId: string;
-    origin: string;
-    startUrl: string;
-    maxPages: number;
-    access?: CrawlerAccess | null;
-    diagnostics?: AuditFetchDiagnostics;
-  },
+  input: AuditPhasesParams & { origin: string; maxPages: number },
 ) {
-  const {
-    auditId,
-    workflowInstanceId,
-    origin,
-    startUrl,
-    maxPages,
-    access,
-    diagnostics,
-  } = input;
+  const { auditId, workflowInstanceId, origin, startUrl, maxPages } = input;
   // "-v2": the checkpoint shape changed (seeds now live in the scratchpad DO
   // instead of the step return). A pre-refactor instance replayed under this
   // code must re-run discovery — resuming from the old cached {sitemapUrls}
   // shape would leave the scratchpad empty and finalize a zero-page audit.
   return pgStep(step, "discover-urls-v2", DISCOVERY_STEP, async () => {
-    const result = await discoverUrls(origin, maxPages, access, diagnostics);
+    const result = await discoverUrls(
+      origin,
+      maxPages,
+      input.access,
+      input.diagnostics,
+    );
     const robots = parseRobotsTxt(origin, result.robotsText);
     const scratchpad = getAuditScratchpad(auditId);
 

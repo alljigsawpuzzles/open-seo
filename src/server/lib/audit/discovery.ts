@@ -54,7 +54,7 @@ async function fetchRobotsTxtText(
       10_000,
       access,
       diagnostics,
-      "robots",
+      { phase: "robots", attempt: 1 },
     );
     if (!fetched?.response.ok) return null;
     return (await fetched.response.text()).slice(0, MAX_ROBOTS_TXT_BYTES);
@@ -76,10 +76,13 @@ async function fetchFollowingRedirects(
   timeoutMs: number,
   access: CrawlerAccess | null | undefined,
   diagnostics?: AuditFetchDiagnostics,
-  phase: AuditFetchPhase = "sitemap",
-  attempt = 1,
+  details: { phase: AuditFetchPhase; attempt: number } = {
+    phase: "sitemap",
+    attempt: 1,
+  },
 ): Promise<{ response: Response; finalUrl: string } | null> {
   // One budget for the whole chain, as the automatic follow had.
+  const { phase, attempt } = details;
   const deadline = Date.now() + timeoutMs;
   let current = url;
   for (let hop = 0; hop <= MAX_DISCOVERY_REDIRECT_HOPS; hop++) {
@@ -283,8 +286,7 @@ async function fetchSitemapDocumentWithRetry(
         SITEMAP_FETCH_TIMEOUT_MS,
         access,
         diagnostics,
-        "sitemap",
-        attempt + 1,
+        { phase: "sitemap", attempt: attempt + 1 },
       );
       if (!fetched) {
         return { nestedSitemaps: [], pageUrls: [], timedOut: false };
