@@ -1,3 +1,4 @@
+import type { AuditFetchDiagnostics } from "./fetch-diagnostics";
 import { AppError } from "@/server/lib/errors";
 import { crawlerHeadersFor, type CrawlerAccess } from "@/shared/crawler-access";
 
@@ -260,23 +261,65 @@ const START_URL_PROBE_TIMEOUT_MS = 10_000;
 export async function resolveStartUrlRedirects(
   startUrl: string,
   access?: CrawlerAccess | null,
+  diagnostics?: AuditFetchDiagnostics,
 ): Promise<{ url: string; poweredBy: string | null }> {
   let current = startUrl;
   for (let hop = 0; hop < START_URL_REDIRECT_HOPS; hop++) {
     let response: Response;
+    const startedAt = Date.now();
+    const request = diagnostics?.begin?.();
+    const headers = {
+      "User-Agent": "OpenSEO-Audit/1.0",
+      ...crawlerHeadersFor(current, access),
+    };
     try {
       response = await fetch(current, {
         method: "HEAD",
         redirect: "manual",
-        headers: {
-          "User-Agent": "OpenSEO-Audit/1.0",
-          ...crawlerHeadersFor(current, access),
-        },
+        headers,
         signal: AbortSignal.timeout(START_URL_PROBE_TIMEOUT_MS),
       });
-    } catch {
+    } catch (error) {
+      diagnostics?.record({
+        phase: "probe",
+        attempt: 1,
+        redirectHop: hop,
+        request,
+        url: current,
+        requestHeaders: headers,
+        startedAt,
+        durationMs: Date.now() - startedAt,
+        status: null,
+        redirectLocation: null,
+        retryAfter: null,
+        cfCacheStatus: null,
+        cfRay: null,
+        requestId: null,
+        errorCategory:
+          error instanceof Error &&
+          (error.name === "AbortError" || error.name === "TimeoutError")
+            ? "timeout"
+            : "network",
+      });
       return { url: current, poweredBy: null };
     }
+    diagnostics?.record({
+      phase: "probe",
+      attempt: 1,
+      redirectHop: hop,
+      request,
+      url: current,
+      requestHeaders: headers,
+      startedAt,
+      durationMs: Date.now() - startedAt,
+      status: response.status,
+      redirectLocation: response.headers.get("location"),
+      retryAfter: response.headers.get("retry-after"),
+      cfCacheStatus: response.headers.get("cf-cache-status"),
+      cfRay: response.headers.get("cf-ray"),
+      requestId: response.headers.get("x-request-id"),
+      errorCategory: "http_response",
+    });
     if (response.status < 300 || response.status >= 400) {
       return { url: current, poweredBy: response.headers.get("powered-by") };
     }

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createAuditFetchDiagnostics } from "@/server/lib/audit/fetch-diagnostics";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCrawlThrottle } from "@/server/lib/audit/crawl-throttle";
 import { crawlPage } from "@/server/workflows/site-audit-workflow-helpers";
@@ -60,6 +61,85 @@ describe("crawlPage", () => {
     // Recovered, but the crawl window should still slow down after it.
     expect(page?.rateLimited).toBe(true);
   });
+
+  it("reports every crawl attempt to bounded audit diagnostics", async () => {
+    vi.useFakeTimers();
+    stubFetch({ status: 429, retryAfter: "5" }, { status: 200 });
+    const diagnostics = { record: vi.fn() };
+
+    const crawled = crawlPage(
+      PAGE_URL,
+      0,
+      false,
+      createCrawlThrottle(Date.now() + 90_000),
+      { diagnostics },
+    );
+    await vi.advanceTimersByTimeAsync(6_000);
+    await crawled;
+
+    expect(diagnostics.record).toHaveBeenCalledTimes(2);
+    expect(diagnostics.record).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        phase: "crawl",
+        attempt: 1,
+        status: 429,
+        retryAfter: "5",
+      }),
+    );
+    expect(diagnostics.record).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ phase: "crawl", attempt: 2, status: 200 }),
+    );
+  });
+
+  it.each([
+    ["matching host", "example.com", null, true],
+    ["different host", "other.example", null, false],
+    ["expired credential", "example.com", "2000-01-01T00:00:00Z", false],
+  ])(
+    "logs the headers actually sent for %s",
+    async (_label, host, expiresAt, expected) => {
+      const fetchMock = stubFetch({ status: 200 });
+      const info = vi.spyOn(console, "info").mockImplementation(() => {});
+      const access = {
+        host,
+        expiresAt,
+        headers: shopifyCrawlerHeaders(
+          "sig1=(...)",
+          "sig1=:private-signature:",
+        ),
+      };
+      await crawlPage(
+        PAGE_URL,
+        0,
+        false,
+        createCrawlThrottle(Date.now() + 90_000),
+        {
+          access,
+          diagnostics: createAuditFetchDiagnostics("audit-header-check"),
+        },
+      );
+      const sentHeaders = new Headers(fetchMock.mock.calls[0][1]?.headers);
+      expect(sentHeaders.has("Signature")).toBe(expected);
+      await vi.waitFor(() => {
+        expect(info).toHaveBeenCalledWith(
+          "site_audit:fetch",
+          expect.objectContaining({
+            signatureAttached: expected,
+            headerPresence: {
+              "Signature-Input": expected,
+              Signature: expected,
+              "Signature-Agent": expected,
+            },
+          }),
+        );
+      });
+      expect(JSON.stringify(info.mock.calls)).not.toContain(
+        "private-signature",
+      );
+    },
+  );
 
   it("records a page the site keeps rate limiting, without calling it blocked", async () => {
     vi.useFakeTimers();

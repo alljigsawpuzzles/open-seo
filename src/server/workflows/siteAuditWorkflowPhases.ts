@@ -21,6 +21,7 @@ import type { DetectedIssue } from "@/server/lib/audit/issues/page-reporters";
 import type { AuditConfig } from "@/server/lib/audit/types";
 import type { CrawlerAccess } from "@/shared/crawler-access";
 import type { RenderUsage } from "@/shared/audit-rendering";
+import type { AuditFetchDiagnostics } from "@/server/lib/audit/fetch-diagnostics";
 import { captureServerEvent } from "@/server/lib/posthog";
 import {
   runCrawlPhase,
@@ -53,6 +54,7 @@ type AuditPhasesParams = {
   config: AuditConfig;
   access?: CrawlerAccess | null;
   renderUsage: RenderUsage;
+  diagnostics?: AuditFetchDiagnostics;
 };
 
 export async function runAuditPhases(
@@ -68,17 +70,15 @@ export async function runAuditPhases(
     config,
     access,
     renderUsage,
+    diagnostics,
   } = params;
   const origin = getOrigin(startUrl);
   const maxPages = config.maxPages;
 
   const discovery = await runDiscoveryPhase(step, {
-    auditId,
-    workflowInstanceId,
+    ...params,
     origin,
-    startUrl,
     maxPages,
-    access,
   });
   // Parsed outside the step from checkpointed text, so replays see the exact
   // robots rules the original run used (a live re-fetch could differ and
@@ -94,6 +94,7 @@ export async function runAuditPhases(
     renderJavaScript: config.renderJavaScript,
     renderUsage,
     access,
+    diagnostics,
   });
   await runLighthousePhase(step, {
     auditId,
@@ -117,23 +118,20 @@ export async function runAuditPhases(
 
 async function runDiscoveryPhase(
   step: WorkflowStep,
-  input: {
-    auditId: string;
-    workflowInstanceId: string;
-    origin: string;
-    startUrl: string;
-    maxPages: number;
-    access?: CrawlerAccess | null;
-  },
+  input: AuditPhasesParams & { origin: string; maxPages: number },
 ) {
-  const { auditId, workflowInstanceId, origin, startUrl, maxPages, access } =
-    input;
+  const { auditId, workflowInstanceId, origin, startUrl, maxPages } = input;
   // "-v2": the checkpoint shape changed (seeds now live in the scratchpad DO
   // instead of the step return). A pre-refactor instance replayed under this
   // code must re-run discovery — resuming from the old cached {sitemapUrls}
   // shape would leave the scratchpad empty and finalize a zero-page audit.
   return pgStep(step, "discover-urls-v2", DISCOVERY_STEP, async () => {
-    const result = await discoverUrls(origin, maxPages, access);
+    const result = await discoverUrls(
+      origin,
+      maxPages,
+      input.access,
+      input.diagnostics,
+    );
     const robots = parseRobotsTxt(origin, result.robotsText);
     const scratchpad = getAuditScratchpad(auditId);
 

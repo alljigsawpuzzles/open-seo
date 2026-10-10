@@ -27,6 +27,7 @@ import {
 import { crawlPage } from "@/server/workflows/site-audit-workflow-helpers";
 import type { RenderUsage } from "@/shared/audit-rendering";
 import type { CrawlerAccess } from "@/shared/crawler-access";
+import type { AuditFetchDiagnostics } from "@/server/lib/audit/fetch-diagnostics";
 import { pgStep } from "@/server/workflows/pgStep";
 import { CRAWL_CHUNK_STEP } from "@/server/workflows/auditStepConfigs";
 
@@ -101,6 +102,7 @@ type CrawlPhaseParams = {
   renderUsage: RenderUsage;
   /** Crawler-access headers for the audited host, when the org has one. */
   access?: CrawlerAccess | null;
+  diagnostics?: AuditFetchDiagnostics;
 };
 
 export type CrawlPhaseResult = {
@@ -317,7 +319,12 @@ async function runCrawlChunk(
       entry.depth,
       entry.inSitemap,
       throttle,
-      { access: input.access, render, auditId },
+      {
+        access: input.access,
+        render,
+        auditId,
+        diagnostics: input.diagnostics,
+      },
     )
       .then((page) => {
         if (!page) {

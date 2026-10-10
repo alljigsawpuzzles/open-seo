@@ -6,6 +6,10 @@ import { XMLParser } from "fast-xml-parser";
 import { isSameOrigin, normalizeUrl } from "./url-utils";
 import { isCrawlableUrl } from "./url-policy";
 import { crawlerHeadersFor, type CrawlerAccess } from "@/shared/crawler-access";
+import type {
+  AuditFetchDiagnostics,
+  AuditFetchPhase,
+} from "./fetch-diagnostics";
 
 const SITEMAP_FETCH_TIMEOUT_MS = 15_000;
 // robots.txt is checkpointed as durable Workflow step state (~1MiB cap, shared
@@ -42,12 +46,15 @@ export interface RobotsResult {
 async function fetchRobotsTxtText(
   origin: string,
   access?: CrawlerAccess | null,
+  diagnostics?: AuditFetchDiagnostics,
 ): Promise<string | null> {
   try {
     const fetched = await fetchFollowingRedirects(
       `${origin}/robots.txt`,
       10_000,
       access,
+      diagnostics,
+      { phase: "robots", attempt: 1 },
     );
     if (!fetched?.response.ok) return null;
     return (await fetched.response.text()).slice(0, MAX_ROBOTS_TXT_BYTES);
@@ -68,36 +75,84 @@ async function fetchFollowingRedirects(
   url: string,
   timeoutMs: number,
   access: CrawlerAccess | null | undefined,
+  diagnostics?: AuditFetchDiagnostics,
+  details: { phase: AuditFetchPhase; attempt: number } = {
+    phase: "sitemap",
+    attempt: 1,
+  },
 ): Promise<{ response: Response; finalUrl: string } | null> {
   // One budget for the whole chain, as the automatic follow had.
+  const { phase, attempt } = details;
   const deadline = Date.now() + timeoutMs;
   let current = url;
   for (let hop = 0; hop <= MAX_DISCOVERY_REDIRECT_HOPS; hop++) {
-    const response = await fetch(current, {
-      headers: {
-        "User-Agent": "OpenSEO-Audit/1.0",
-        ...crawlerHeadersFor(current, access),
-      },
-      redirect: "manual",
-      signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())),
-    });
-
-    if (response.status < 300 || response.status >= 400) {
-      return { response, finalUrl: current };
-    }
-
-    const location = response.headers.get("location");
-    await response.body?.cancel();
-    if (!location) return null;
-
-    let next: string;
+    const startedAt = Date.now();
+    const request = diagnostics?.begin?.();
+    const headers = crawlerHeadersFor(current, access);
     try {
-      next = new URL(location, current).toString();
-    } catch {
-      return null;
+      const response = await fetch(current, {
+        headers: { "User-Agent": "OpenSEO-Audit/1.0", ...headers },
+        redirect: "manual",
+        signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())),
+      });
+      diagnostics?.record({
+        phase,
+        attempt,
+        redirectHop: hop,
+        request,
+        url: current,
+        requestHeaders: headers,
+        startedAt,
+        durationMs: Date.now() - startedAt,
+        status: response.status,
+        redirectLocation: response.headers.get("location"),
+        retryAfter: response.headers.get("retry-after"),
+        cfCacheStatus: response.headers.get("cf-cache-status"),
+        cfRay: response.headers.get("cf-ray"),
+        requestId: response.headers.get("x-request-id"),
+        errorCategory: "http_response",
+      });
+
+      if (response.status < 300 || response.status >= 400) {
+        return { response, finalUrl: current };
+      }
+
+      const location = response.headers.get("location");
+      await response.body?.cancel();
+      if (!location) return null;
+
+      let next: string;
+      try {
+        next = new URL(location, current).toString();
+      } catch {
+        return null;
+      }
+      if (!isCrawlableUrl(next)) return null;
+      current = next;
+    } catch (error) {
+      diagnostics?.record({
+        phase,
+        attempt,
+        redirectHop: hop,
+        request,
+        url: current,
+        requestHeaders: headers,
+        startedAt,
+        durationMs: Date.now() - startedAt,
+        status: null,
+        redirectLocation: null,
+        retryAfter: null,
+        cfCacheStatus: null,
+        cfRay: null,
+        requestId: null,
+        errorCategory:
+          error instanceof Error &&
+          (error.name === "AbortError" || error.name === "TimeoutError")
+            ? "timeout"
+            : "network",
+      });
+      throw error;
     }
-    if (!isCrawlableUrl(next)) return null;
-    current = next;
   }
   return null;
 }
@@ -211,6 +266,7 @@ async function readBodyCapped(
 async function fetchSitemapDocumentWithRetry(
   sitemapUrl: string,
   access?: CrawlerAccess | null,
+  diagnostics?: AuditFetchDiagnostics,
 ): Promise<{
   nestedSitemaps: string[];
   pageUrls: string[];
@@ -229,6 +285,8 @@ async function fetchSitemapDocumentWithRetry(
         normalizedSitemapUrl,
         SITEMAP_FETCH_TIMEOUT_MS,
         access,
+        diagnostics,
+        { phase: "sitemap", attempt: attempt + 1 },
       );
       if (!fetched) {
         return { nestedSitemaps: [], pageUrls: [], timedOut: false };
@@ -285,8 +343,9 @@ export async function discoverUrls(
   origin: string,
   maxPages = 50,
   access?: CrawlerAccess | null,
+  diagnostics?: AuditFetchDiagnostics,
 ): Promise<{ urls: string[]; robotsText: string | null }> {
-  const robotsText = await fetchRobotsTxtText(origin, access);
+  const robotsText = await fetchRobotsTxtText(origin, access, diagnostics);
   const robots = parseRobotsTxt(origin, robotsText);
 
   // Collect sitemap URLs: from robots.txt + default location
@@ -331,6 +390,7 @@ export async function discoverUrls(
         const result = await fetchSitemapDocumentWithRetry(
           normalizedUrl,
           access,
+          diagnostics,
         );
         if (
           result.pageUrls.length === 0 &&

@@ -1,3 +1,4 @@
+import { createAuditFetchDiagnostics } from "@/server/lib/audit/fetch-diagnostics";
 import { isAuditRenderingAllowed } from "@/server/lib/audit/rendering-policy";
 import {
   lockRenderingCredits,
@@ -92,6 +93,7 @@ async function startAudit(input: {
   const probe = await resolveStartUrlRedirects(
     requestedUrl,
     await CrawlerCredentialService.openCrawlerAccess(credential?.sealed),
+    createAuditFetchDiagnostics(auditId),
   );
   const startUrl = probe.url;
   const startHost = new URL(startUrl).hostname;
