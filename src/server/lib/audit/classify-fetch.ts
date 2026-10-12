@@ -19,11 +19,11 @@ export function classifyFetch(
   bodySnippet: string,
 ): PageFetchClass {
   if (statusCode === 0) return "error";
-  // A final 429 means rate limiting, whether retries were exhausted or the
-  // requested cooldown exceeded the crawl budget. Checked before
-  // cf-mitigated: a Cloudflare rate-limiting rule sets that header too.
-  if (statusCode === 429) return "rate_limited";
+  // cf-mitigated identifies a Challenge Page, including one served as 429.
+  // Keep it eligible for the rendering fallback rather than treating the
+  // challenge document as an ordinary rate-limit response.
   if (mitigated) return "blocked";
+  if (statusCode === 429) return "rate_limited";
   if (statusCode === 401 || statusCode === 403) return "blocked";
   // Real pages aren't served as 202 Accepted; bot challenges are (SiteGround,
   // AWS WAF).
