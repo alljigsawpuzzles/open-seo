@@ -145,6 +145,32 @@ describe("rendered page providers", () => {
     },
   );
 
+  it("identifies a Filtrex block redirect without logging its URL or HTML", async () => {
+    browser.quickAction.mockResolvedValue(
+      cloudflare(
+        200,
+        "private provider payload",
+        "https://example.com/apps/filtrex/block?private=credential",
+        { "cf-ray": "a497202a6cac7b07-MAD" },
+      ),
+    );
+    await expect(render({ browser }).page).rejects.toThrow("Unable to render");
+    expect(console.info).toHaveBeenCalledWith(
+      "site_audit:render",
+      expect.objectContaining({
+        outcome: "fallback",
+        reason: "blocked",
+        blockProvider: "filtrex",
+        providerHttpStatus: 200,
+        originStatus: 200,
+        cfRay: "a497202a6cac7b07-MAD",
+      }),
+    );
+    const logs = JSON.stringify(vi.mocked(console.info).mock.calls);
+    expect(logs).not.toContain("private provider payload");
+    expect(logs).not.toContain("credential");
+  });
+
   it("renders through Context alone where there is no browser", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(context());
     const { page, usage } = render({ contextApiKey: "context-test-key" });

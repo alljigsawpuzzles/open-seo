@@ -152,6 +152,8 @@ export interface CrawledPageResult {
   isHtml: boolean;
   /** App shell, rendered or not; transient signal for the per-page issue reporter. */
   javascriptShell?: boolean;
+  /** Requested rendering failed; initial HTML was analysed. Transient issue signal. */
+  renderingFailed?: boolean;
   /**
    * HTML size read for this page (approximate; capped at MAX_HTML_BYTES).
    * Transient — feeds the crawl window's memory-pressure signal, since

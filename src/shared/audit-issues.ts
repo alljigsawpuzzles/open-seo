@@ -16,6 +16,22 @@ interface AuditIssueDescriptor {
 }
 
 export const AUDIT_ISSUE_TYPES = {
+  "fetch-failed": {
+    severity: "warning",
+    title: "Page could not be fetched",
+    explanation:
+      "The crawler could not obtain a usable page, for example because of a connection failure, timeout or rendering failure. This page was not analysed; the failure does not establish that the page is broken for visitors.",
+    howToFix:
+      "Check that the URL is accessible and review the audit's fetch and rendering logs. Check crawler access and bot-protection rules, then rerun the affected pages after resolving the failure.",
+  },
+  "javascript-rendering-failed": {
+    severity: "warning",
+    title: "JavaScript rendering failed; initial HTML analysed",
+    explanation:
+      "The initial page HTML was readable, but the requested browser render failed or returned another page. This audit analysed the initial HTML. Content or links added or changed by JavaScript could not be verified.",
+    howToFix:
+      "Review browser-rendering logs and allow the renderer through any applicable bot-protection app or access rule. Shopify crawler credentials used by the plain crawler do not establish that the browser renderer is authorised. Rerun with JavaScript rendering after resolving the failure.",
+  },
   "blocked-page": {
     severity: "critical",
     title: "Crawler was blocked",

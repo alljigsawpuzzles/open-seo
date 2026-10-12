@@ -156,6 +156,7 @@ export async function crawlPage(
   let statusCode: number | null = null;
   let retryAfter: string | null = null;
   let renderAttempted = false;
+  let renderingFailed = false;
 
   try {
     const fetched = await fetchPage(url, throttle, crawlerHeaders, diagnostics);
@@ -217,8 +218,9 @@ export async function crawlPage(
         // The renderer can be challenged where the direct fetch was not.
         fetchClass = classifyFetch(statusCode, false, body.slice(0, 4_000));
       } catch (error) {
-        // A challenge that neither renderer passed stays blocked.
-        if (!challenged) throw error;
+        // Preserve readable initial HTML when optional rendering fails.
+        // A challenge is never usable content and must remain blocked.
+        renderingFailed = true;
         logCrawlFailure({
           auditId,
           url,
@@ -317,6 +319,7 @@ export async function crawlPage(
       isHtml: true,
       javascriptShell,
       htmlBytes: body.length,
+      renderingFailed,
       rateLimited,
       imagesTotal: analysis.images.length,
       // Only a truly absent alt attribute counts: alt="" is the correct

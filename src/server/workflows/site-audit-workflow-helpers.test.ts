@@ -251,6 +251,41 @@ describe("crawlPage", () => {
     });
   });
 
+  it("retains readable initial HTML and flags a failed optional render", async () => {
+    stubFetch({ status: 200 });
+    const render = vi.fn().mockRejectedValue(new Error("Unable to render"));
+    const page = await crawlPage(
+      PAGE_URL,
+      0,
+      false,
+      createCrawlThrottle(Date.now() + 90_000),
+      { render },
+    );
+    expect(page).toMatchObject({
+      statusCode: 200,
+      fetchClass: "ok",
+      title: "A page",
+      renderingFailed: true,
+    });
+  });
+
+  it("does not analyse a challenge when its browser render fails", async () => {
+    stubFetch({ status: 429, mitigated: true });
+    const render = vi.fn().mockRejectedValue(new Error("Unable to render"));
+    const page = await crawlPage(
+      PAGE_URL,
+      0,
+      false,
+      createCrawlThrottle(Date.now() + 90_000),
+      { render },
+    );
+    expect(page).toMatchObject({
+      statusCode: 429,
+      fetchClass: "blocked",
+      title: "",
+    });
+  });
+
   it("honours an explicit Retry-After on a challenged 429", async () => {
     vi.useFakeTimers();
     const fetchMock = stubFetch(
