@@ -217,7 +217,7 @@ export async function crawlPage(
         if (challenged) statusCode = page.status ?? 200;
         // The renderer can be challenged where the direct fetch was not.
         fetchClass = classifyFetch(statusCode, false, body.slice(0, 4_000));
-      } catch (error) {
+      } catch {
         // Preserve readable initial HTML when optional rendering fails.
         // A challenge is never usable content and must remain blocked.
         renderingFailed = true;
