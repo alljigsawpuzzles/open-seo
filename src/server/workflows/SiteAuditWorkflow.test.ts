@@ -29,6 +29,7 @@ vi.mock("@/server/features/audit/repositories/AuditRepository", () => ({
     getAuditForWorkflow: vi
       .fn()
       .mockResolvedValue({ projectId: "project", currentPhase: "crawling" }),
+    getAuditForProject: vi.fn().mockResolvedValue(null),
     failAudit: mocks.failAudit,
   },
 }));
@@ -119,4 +120,32 @@ describe("rendered audit settlement", () => {
     expect(mocks.settle).toHaveBeenCalledTimes(1);
     expect(mocks.failAudit).not.toHaveBeenCalled();
   });
+});
+
+it("rejects a private diagnostic without its saved project audit, without running normal audit work", async () => {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the mocked base class does not inspect Worker constructor context
+  const workflow = new SiteAuditWorkflow({} as ExecutionContext, {} as Env);
+  await expect(
+    workflow.run(
+      {
+        instanceId: "diagnostic",
+        timestamp: new Date(),
+        payload: {
+          diagnostic: "workflow-fetch-cache",
+          auditId: "missing",
+          projectId: "other-project",
+          access: {
+            host: "store.example.com",
+            signatureInput: "sealed-input",
+            signature: "sealed-signature",
+            expiresAt: null,
+          },
+        },
+      },
+      step,
+    ),
+  ).rejects.toThrow("Diagnostic audit context not found");
+  expect(mocks.runAuditPhases).not.toHaveBeenCalled();
+  expect(mocks.failAudit).not.toHaveBeenCalled();
+  expect(mocks.settle).not.toHaveBeenCalled();
 });

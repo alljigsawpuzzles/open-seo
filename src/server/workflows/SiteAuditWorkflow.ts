@@ -32,6 +32,13 @@ import {
 import type { RenderUsage } from "@/shared/audit-rendering";
 import { createAuditFetchDiagnostics } from "@/server/lib/audit/fetch-diagnostics";
 
+interface WorkflowFetchDiagnosticParams {
+  diagnostic: "workflow-fetch-cache";
+  auditId: string;
+  projectId: string;
+  access: SealedCrawlerAccess;
+}
+
 interface AuditParams {
   auditId: string;
   billingCustomer: BillingCustomerContext;
@@ -50,12 +57,47 @@ interface AuditParams {
   renderLocks?: RenderingLock[];
 }
 
-export class SiteAuditWorkflow extends WorkflowEntrypoint<Env, AuditParams> {
-  async run(event: WorkflowEvent<AuditParams>, step: WorkflowStep) {
+export class SiteAuditWorkflow extends WorkflowEntrypoint<
+  Env,
+  AuditParams | WorkflowFetchDiagnosticParams
+> {
+  async run(
+    event: WorkflowEvent<AuditParams | WorkflowFetchDiagnosticParams>,
+    step: WorkflowStep,
+  ) {
+    if ("diagnostic" in event.payload) {
+      const input = event.payload;
+      if (input.diagnostic !== "workflow-fetch-cache")
+        throw new Error("Unknown workflow diagnostic");
+      return pgStep(
+        step,
+        "private-workflow-fetch-comparison",
+        {
+          retries: { limit: 0, delay: "1 second" },
+          timeout: "45 seconds",
+        },
+        async () => {
+          const audit = await AuditRepository.getAuditForProject(
+            input.auditId,
+            input.projectId,
+          );
+          if (!audit) throw new Error("Diagnostic audit context not found");
+          const access = await CrawlerCredentialService.openCrawlerAccess(
+            input.access,
+          );
+          if (!access || new URL(audit.startUrl).hostname !== access.host)
+            throw new Error("Diagnostic signed access mismatch");
+          const { compareWorkflowFetch } =
+            await import("@/server/lib/audit/workflow-fetch-comparison");
+          return compareWorkflowFetch(audit.startUrl, access);
+        },
+      );
+    }
     // Scope a per-request Postgres client for this workflow invocation (no-op in
     // D1 mode). The socket is reclaimed when the invocation ends, so there is
     // nothing to tear down here.
-    return withPgClient(() => this.runScoped(event, step));
+    const payload = event.payload;
+    return withPgClient(() => this.runScoped({ ...event, payload }, step));
   }
 
   private async runScoped(
