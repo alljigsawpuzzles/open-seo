@@ -1,3 +1,4 @@
+import { inspectAuditRejection } from "@/server/lib/audit/rejection-details";
 /**
  * robots.txt and sitemap.xml discovery for the site audit crawler.
  */
@@ -105,6 +106,10 @@ async function fetchFollowingRedirects(
         startedAt,
         durationMs: Date.now() - startedAt,
         status: response.status,
+        rejection:
+          diagnostics && response.status === 429
+            ? await inspectAuditRejection(response)
+            : undefined,
         redirectLocation: response.headers.get("location"),
         retryAfter: response.headers.get("retry-after"),
         cfCacheStatus: response.headers.get("cf-cache-status"),
