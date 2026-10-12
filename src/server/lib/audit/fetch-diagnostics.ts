@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { inspectAuditRejection } from "./rejection-details";
 
 const MAX_SUCCESS_DIAGNOSTICS = 48;
 const MAX_ERROR_DIAGNOSTICS = 48;
@@ -11,6 +12,7 @@ type RequestTiming = {
 };
 
 type FetchOutcome = {
+  rejection?: Awaited<ReturnType<typeof inspectAuditRejection>>;
   phase: AuditFetchPhase;
   attempt: number;
   redirectHop?: number;
@@ -84,6 +86,14 @@ export function createAuditFetchDiagnostics(
           status: outcome.status,
           durationMs: outcome.durationMs,
           signatureAttached: headers.has("Signature"),
+          credentialFingerprint: headers.has("Signature")
+            ? createHash("sha256")
+                .update(
+                  `crawler-access-v1\0${headers.get("Signature-Input")}\0${headers.get("Signature")}`,
+                )
+                .digest("hex")
+                .slice(0, 16)
+            : null,
           headerPresence: {
             "Signature-Input": headers.has("Signature-Input"),
             Signature: headers.has("Signature"),
@@ -97,6 +107,7 @@ export function createAuditFetchDiagnostics(
           cfCacheStatus: outcome.cfCacheStatus,
           requestIds: { cfRay: outcome.cfRay, requestId: outcome.requestId },
           errorCategory: outcome.errorCategory,
+          rejection: outcome.rejection,
         });
       } catch {
         console.warn("site_audit:diagnostic_unavailable", {

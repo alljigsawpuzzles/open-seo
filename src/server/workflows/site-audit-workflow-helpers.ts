@@ -1,3 +1,4 @@
+import { inspectAuditRejection } from "@/server/lib/audit/rejection-details";
 import { MAX_HTML_BYTES, readTextUpTo } from "@/server/lib/audit/html-response";
 import { classifyFetch } from "@/server/lib/audit/classify-fetch";
 import type { CrawledPageResult } from "@/server/lib/audit/types";
@@ -91,6 +92,10 @@ async function fetchPage(
       startedAt,
       durationMs: Date.now() - startedAt,
       status: response.status,
+      rejection:
+        diagnostics && response.status === 429
+          ? await inspectAuditRejection(response)
+          : undefined,
       redirectLocation: response.headers.get("location"),
       retryAfter: response.headers.get("retry-after"),
       cfCacheStatus: response.headers.get("cf-cache-status"),
