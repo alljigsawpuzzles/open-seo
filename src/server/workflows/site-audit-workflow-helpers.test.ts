@@ -13,7 +13,13 @@ const PAGE_HTML =
  * Answer each fetch with the next reply, repeating the last one. Every call
  * builds a fresh Response: a body can only be read (or cancelled) once.
  */
-function stubFetch(...replies: Array<{ status: number; retryAfter?: string }>) {
+function stubFetch(
+  ...replies: Array<{
+    status: number;
+    retryAfter?: string;
+    mitigated?: boolean;
+  }>
+) {
   let index = 0;
   return vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
     const reply = replies[Math.min(index++, replies.length - 1)];
@@ -21,6 +27,7 @@ function stubFetch(...replies: Array<{ status: number; retryAfter?: string }>) {
       status: reply.status,
       headers: {
         "content-type": "text/html",
+        ...(reply.mitigated ? { "cf-mitigated": "challenge" } : {}),
         ...(reply.retryAfter ? { "retry-after": reply.retryAfter } : {}),
       },
     });
@@ -208,6 +215,56 @@ describe("crawlPage", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("classifies a 429 Challenge Page without the minutes-long rate-limit retry", async () => {
+    vi.useFakeTimers();
+    const fetchMock = stubFetch({ status: 429, mitigated: true });
+    const crawled = crawl();
+    await vi.advanceTimersByTimeAsync(90_000);
+    const page = await crawled;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(page).toMatchObject({
+      statusCode: 429,
+      fetchClass: "blocked",
+      rateLimited: false,
+    });
+  });
+
+  it("uses the requested renderer for a 429 Challenge Page", async () => {
+    vi.useFakeTimers();
+    const fetchMock = stubFetch({ status: 429, mitigated: true });
+    const render = vi.fn().mockResolvedValue({ html: PAGE_HTML, status: 200 });
+    const crawled = crawlPage(
+      PAGE_URL,
+      0,
+      false,
+      createCrawlThrottle(Date.now() + 90_000),
+      { render },
+    );
+    await vi.advanceTimersByTimeAsync(90_000);
+    const page = await crawled;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(render).toHaveBeenCalledWith(PAGE_URL);
+    expect(page).toMatchObject({
+      statusCode: 200,
+      fetchClass: "ok",
+      title: "A page",
+    });
+  });
+
+  it("honours an explicit Retry-After on a challenged 429", async () => {
+    vi.useFakeTimers();
+    const fetchMock = stubFetch(
+      { status: 429, mitigated: true, retryAfter: "5" },
+      { status: 200 },
+    );
+    const crawled = crawl();
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect((await crawled)?.fetchClass).toBe("ok");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("does not retry a 403 — bot protection is not a speed limit", async () => {
     const fetchMock = stubFetch({ status: 403 });
 
@@ -216,7 +273,9 @@ describe("crawlPage", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(page?.fetchClass).toBe("blocked");
   });
+});
 
+describe("crawlPage metadata", () => {
   it("preserves extracted metadata and nested values when releasing the HTML", async () => {
     vi.stubGlobal(
       "fetch",

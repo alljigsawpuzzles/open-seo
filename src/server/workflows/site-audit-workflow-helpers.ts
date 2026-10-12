@@ -110,7 +110,13 @@ async function fetchPage(
       // the last retry is already classified rate_limited and needs no flag.
       rateLimited: attempt > 1,
     };
-    if (response.status !== 429) {
+    // An explicit Retry-After still applies even when a rate-limit rule
+    // issues a challenge. Without that hint, hand the challenge to the
+    // existing blocked-page/rendering path instead of repeating it for minutes.
+    const challengeWithoutCooldown =
+      response.headers.get("cf-mitigated") === "challenge" &&
+      !response.headers.get("retry-after");
+    if (response.status !== 429 || challengeWithoutCooldown) {
       await throttle.recovered();
       return result;
     }
