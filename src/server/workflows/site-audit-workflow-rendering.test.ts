@@ -107,15 +107,22 @@ describe("crawlPage with JavaScript rendering", () => {
     },
   );
 
-  it("keeps a challenge that no renderer passed blocked, not failed", async () => {
-    stubFetch({ status: 202, body: SITEGROUND_CHALLENGE });
-    const render = rendered();
-    render.mockRejectedValue(new Error("Unable to render this page"));
-    expect(await crawl(render)).toMatchObject({
-      statusCode: 202,
-      fetchClass: "blocked",
-    });
-  });
+  it.each([202, 429])(
+    "keeps an unpassed %s challenge blocked",
+    async (status) => {
+      stubFetch({
+        status,
+        body: SITEGROUND_CHALLENGE,
+        headers: status === 429 ? { "cf-mitigated": "challenge" } : {},
+      });
+      const render = rendered();
+      render.mockRejectedValue(new Error("Unable to render this page"));
+      expect(await crawl(render)).toMatchObject({
+        statusCode: status,
+        fetchClass: "blocked",
+      });
+    },
+  );
 
   it("marks a 202 bot challenge blocked instead of auditing it when rendering is off", async () => {
     stubFetch({ status: 202, body: AWS_WAF_CHALLENGE });
@@ -136,15 +143,16 @@ describe("crawlPage with JavaScript rendering", () => {
     },
   );
 
-  it("keeps a failed render as an unread page rather than auditing the HTML shell", async () => {
+  it("retains readable HTML and flags a failed optional render", async () => {
     stubFetch({ status: 200 });
     const render = rendered();
     render.mockRejectedValue(new Error("Unable to render this page"));
     vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(await crawl(render)).toMatchObject({
-      fetchClass: "error",
-      isHtml: false,
-      wordCount: 0,
+      fetchClass: "ok",
+      isHtml: true,
+      title: "A page",
+      renderingFailed: true,
     });
   });
 });
