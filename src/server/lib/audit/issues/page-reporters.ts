@@ -55,6 +55,7 @@ export function runPageReporters(page: CrawledPageResult): DetectedIssue[] {
     return issues;
   }
   if (page.fetchClass === "error") {
+    report("fetch-failed");
     return issues;
   }
 
@@ -69,6 +70,10 @@ export function runPageReporters(page: CrawledPageResult): DetectedIssue[] {
   // Redirects are normal on their own; chains/loops are flagged in multipage.
   if (page.statusCode >= 300) {
     return issues;
+  }
+
+  if (page.renderingFailed) {
+    report("javascript-rendering-failed", { contentSource: "initial_html" });
   }
 
   if (page.responseTimeMs > SLOW_RESPONSE_MS) {

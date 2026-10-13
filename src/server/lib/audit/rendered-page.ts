@@ -73,10 +73,26 @@ function usableHtml(url: string, finalUrl: string, html: string) {
 /** The rendered HTML, with the origin's status when the renderer reports it. */
 export type RenderedPage = { html: string; status: number | null };
 
+type CloudflareRenderDiagnostic = {
+  reason?:
+    | "provider-http"
+    | "invalid-response"
+    | "different-url"
+    | "empty-html"
+    | "blocked"
+    | "origin-error"
+    | "provider-exception";
+  providerHttpStatus?: number;
+  originStatus?: number;
+  cfRay?: string;
+  blockProvider?: "filtrex";
+};
+
 /** Null when Cloudflare failed, was blocked, or saw an origin error. */
 async function renderWithCloudflare(
   url: string,
   browser: Pick<BrowserRun, "quickAction">,
+  diagnostic: CloudflareRenderDiagnostic,
 ): Promise<RenderedPage | null> {
   try {
     const response = await browser.quickAction("content", {
@@ -87,26 +103,52 @@ async function renderWithCloudflare(
         timeout: CLOUDFLARE_RENDER_TIMEOUT_MS,
       },
     });
+    diagnostic.providerHttpStatus = response.status;
     if (!response.ok) {
+      diagnostic.reason = "provider-http";
       await response.body?.cancel();
       return null;
     }
-    const data = cloudflareSchema.parse(await readProviderJson(response));
+    const parsed = cloudflareSchema.safeParse(await readProviderJson(response));
+    if (!parsed.success) {
+      diagnostic.reason = "invalid-response";
+      return null;
+    }
+    const data = parsed.data;
     const { status, finalUrl, headers } = data.meta;
-    const html = usableHtml(url, finalUrl, data.result);
+    diagnostic.originStatus = status;
+    const ray = Object.entries(headers ?? {}).find(
+      ([name]) => name.toLowerCase() === "cf-ray",
+    )?.[1];
+    if (ray && /^[a-f0-9]{16,32}-[A-Z]{3}$/.test(ray)) diagnostic.cfRay = ray;
+    if (normalizeUrl(finalUrl, url) !== normalizeUrl(url, url)) {
+      if (new URL(finalUrl).pathname === "/apps/filtrex/block") {
+        diagnostic.blockProvider = "filtrex";
+        diagnostic.reason = "blocked";
+      } else diagnostic.reason = "different-url";
+      return null;
+    }
+    if (!data.result.trim()) {
+      diagnostic.reason = "empty-html";
+      return null;
+    }
     const mitigated = Object.entries(headers ?? {}).some(
       ([name, value]) =>
         name.toLowerCase() === "cf-mitigated" && Boolean(value.trim()),
     );
-    if (
-      status >= 400 ||
-      classifyFetch(status, mitigated, html.slice(0, 4_000)) !== "ok"
-    ) {
+    const fetchClass = classifyFetch(
+      status,
+      mitigated,
+      data.result.slice(0, 4_000),
+    );
+    if (status >= 400 || fetchClass !== "ok") {
+      diagnostic.reason = fetchClass === "blocked" ? "blocked" : "origin-error";
       return null;
     }
-    return { html, status };
+    return { html: truncateToBytes(data.result, MAX_HTML_BYTES), status };
   } catch {
-    // Provider bodies/errors can contain page data. Nothing raw is logged.
+    // Never log provider payloads, exception messages, cookies or credential headers.
+    diagnostic.reason = "provider-exception";
     return null;
   }
 }
@@ -171,12 +213,14 @@ async function renderPage(
   }
 
   if (options.browser) {
-    const page = await renderWithCloudflare(url, options.browser);
+    const diagnostic: CloudflareRenderDiagnostic = {};
+    const page = await renderWithCloudflare(url, options.browser, diagnostic);
     options.usage.cloudflareAttempts += 1;
     console.info("site_audit:render", {
       auditId: options.auditId,
       provider: "cloudflare",
       outcome: page ? "ok" : "fallback",
+      ...diagnostic,
     });
     if (page) return page;
   }

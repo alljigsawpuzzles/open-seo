@@ -98,9 +98,16 @@ describe("runPageReporters", () => {
   it.each([
     [{ fetchClass: "blocked", statusCode: 403 }, ["blocked-page"]],
     [{ fetchClass: "rate_limited", statusCode: 429 }, ["rate-limited-page"]],
-    [{ fetchClass: "error", statusCode: 0 }, []],
+    [{ fetchClass: "error", statusCode: 0 }, ["fetch-failed"]],
   ] as const)("reports %o as %j", (overrides, expected) => {
     expect(issueTypes(makePage(overrides))).toEqual(expected);
+  });
+
+  it("reports requested rendering failures while keeping initial-HTML checks", () => {
+    expect(issueTypes(makePage({ renderingFailed: true, title: "" }))).toEqual([
+      "javascript-rendering-failed",
+      "missing-title",
+    ]);
   });
 
   it("classifies error statuses by range", () => {
