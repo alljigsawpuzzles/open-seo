@@ -15,7 +15,8 @@ describe("self-host audit worker secrets", () => {
     );
 
     expect(auditWorker).toContain(
-      "BETTER_AUTH_SECRET: dataEnv.BETTER_AUTH_SECRET",
+      "CRAWLER_ACCESS_SECRET: dataEnv.CRAWLER_ACCESS_SECRET",
     );
+    expect(auditWorker).not.toContain("BETTER_AUTH_SECRET:");
   });
 });
