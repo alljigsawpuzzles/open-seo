@@ -109,7 +109,8 @@ export function AiResearchSetupGate({
         }}
       />
     );
-  if (status === "ready" && !finishing) return children;
+  if (status === "manual" || (status === "ready" && !finishing))
+    return children;
   if (setup.data.review)
     return (
       <div className="grid min-h-[calc(100dvh-8rem)] place-items-center">

@@ -1,9 +1,9 @@
 import { useId } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Papa from "papaparse";
 import { Plus, Loader2, Sparkles } from "lucide-react";
 import { generateAiVisibilityPrompts } from "@/serverFunctions/ai-visibility";
-import { AiQueryError } from "./shared";
+import { AiQueryError, aiResearchSetupQueryOptions } from "./shared";
 import { toast } from "sonner";
 import { Button } from "@/client/components/ui/button";
 import { Field, FieldLabel } from "@/client/components/ui/field";
@@ -29,6 +29,8 @@ export function TrackerPromptFields({
   onGeneratingChange: (pending: boolean) => void;
 }) {
   const promptsId = useId();
+  const setup = useQuery(aiResearchSetupQueryOptions(projectId));
+  const generationAvailable = setup.data?.generationAvailable === true;
   const group = value.topic;
   const topicPrompts = state.prompts.filter(
     (prompt) => !prompt.archived && prompt.topic === group.name,
@@ -94,6 +96,7 @@ export function TrackerPromptFields({
             variant="outline"
             size="sm"
             disabled={
+              !generationAvailable ||
               generate.isPending ||
               group.prompts.filter((text) => text.trim()).length >=
                 MAX_PROMPTS_PER_ADDITION
@@ -108,6 +111,11 @@ export function TrackerPromptFields({
             {generate.isPending ? "Generating…" : "Generate"}
           </Button>
         </div>
+        {setup.data && !generationAvailable && (
+          <p className="text-xs text-muted-foreground">
+            Automatic suggestions aren’t configured. Add your own prompts below.
+          </p>
+        )}
         <div className="space-y-2">
           {group.prompts.map((text, index) => (
             <Input
