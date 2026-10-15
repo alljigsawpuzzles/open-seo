@@ -7,6 +7,9 @@ const {
   workflow,
   prepareWebsiteTracking,
   startWebsiteTrackingRun,
+  getOptionalEnvValue,
+  isHostedServerAuthMode,
+  checkUsageCreditsDepleted,
 } = vi.hoisted(() => ({
   listCompetitors: vi.fn(),
   listResearchKeywords: vi.fn(),
@@ -14,6 +17,9 @@ const {
   workflow: { get: vi.fn(), create: vi.fn() },
   prepareWebsiteTracking: vi.fn(),
   startWebsiteTrackingRun: vi.fn(),
+  getOptionalEnvValue: vi.fn(),
+  isHostedServerAuthMode: vi.fn(),
+  checkUsageCreditsDepleted: vi.fn(),
 }));
 
 vi.mock("cloudflare:workers", () => ({
@@ -22,10 +28,11 @@ vi.mock("cloudflare:workers", () => ({
 
 vi.mock("@/db/runBatch", () => ({ runBatch: vi.fn() }));
 vi.mock("@/server/billing/subscription", () => ({
-  checkUsageCreditsDepleted: vi.fn(),
+  checkUsageCreditsDepleted,
 }));
 vi.mock("@/server/lib/runtime-env", () => ({
-  isHostedServerAuthMode: async () => false,
+  getOptionalEnvValue,
+  isHostedServerAuthMode,
 }));
 vi.mock("../repositories/aiVisibilityConfigurationRepository", () => ({
   writeConfiguration: vi.fn(),
@@ -72,6 +79,12 @@ import {
 import { customer } from "./aiVisibilityTestFixtures";
 
 const topic = (name: string) => ({ name, prompts: [] });
+
+beforeEach(() => {
+  getOptionalEnvValue.mockResolvedValue("test-model-key");
+  isHostedServerAuthMode.mockResolvedValue(false);
+  checkUsageCreditsDepleted.mockResolvedValue({ depleted: false });
+});
 
 describe("runAiResearchSetup", () => {
   beforeEach(() => {
@@ -184,5 +197,47 @@ describe("startAiResearchSetup", () => {
         customer: { ...customer, projectId: "project" },
       },
     });
+  });
+});
+
+describe("manual self-hosted AI visibility", () => {
+  beforeEach(() => {
+    getOptionalEnvValue.mockResolvedValue(undefined);
+    listResearchKeywords.mockResolvedValue([]);
+    listCompetitors.mockResolvedValue([]);
+  });
+
+  it("lets a self-host without a generation model use manual setup despite an old failed workflow", async () => {
+    workflow.get.mockResolvedValue({
+      status: async () => ({ status: "errored" }),
+    });
+
+    await expect(getAiResearchSetup("project")).resolves.toMatchObject({
+      status: "manual",
+      generationAvailable: false,
+      keywords: [],
+    });
+    expect(workflow.get).not.toHaveBeenCalled();
+  });
+
+  it("does not start a paid setup workflow for a manual self-host", async () => {
+    await expect(
+      startAiResearchSetup({ projectId: "project" }, customer),
+    ).resolves.toMatchObject({ status: "manual" });
+    expect(workflow.create).not.toHaveBeenCalled();
+    expect(research).not.toHaveBeenCalled();
+  });
+
+  it("keeps the hosted setup credit check when its generation key is missing", async () => {
+    isHostedServerAuthMode.mockResolvedValue(true);
+    checkUsageCreditsDepleted.mockResolvedValue({ depleted: true });
+    workflow.get.mockResolvedValue({
+      status: async () => ({ status: "errored" }),
+    });
+
+    await expect(
+      startAiResearchSetup({ projectId: "project" }, customer),
+    ).rejects.toMatchObject({ code: "INSUFFICIENT_CREDITS" });
+    expect(workflow.create).not.toHaveBeenCalled();
   });
 });

@@ -14,7 +14,10 @@ import {
   type WebsiteResearch,
 } from "@/types/schemas/projectWebsite";
 import { AppError } from "@/server/lib/errors";
-import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
+import {
+  getOptionalEnvValue,
+  isHostedServerAuthMode,
+} from "@/server/lib/runtime-env";
 import { AiVisibilityRepository as repo } from "../repositories/AiVisibilityRepository";
 import {
   writeConfiguration,
@@ -87,11 +90,21 @@ export async function getAiResearchSetup(projectId: string) {
     ProjectContextRepository.listSections(projectId),
     ProjectContextRepository.listCompetitors(projectId),
   ]);
+  const generationAvailable = Boolean(
+    await getOptionalEnvValue("OPENROUTER_API_KEY"),
+  );
+  // DataForSEO research and collection also work with manually entered topics
+  // and prompts. A self-host without the optional generation model must not be
+  // trapped behind its failed automatic setup workflow.
+  const manual = !generationAvailable && !(await isHostedServerAuthMode());
   const run = keywords.length
     ? { status: "ready" as const }
-    : await readSetupRun(projectId);
+    : manual
+      ? { status: "manual" as const }
+      : await readSetupRun(projectId);
   return {
     keywords,
+    generationAvailable,
     ...missingContext(sections, competitors),
     status: run.status,
     review: "review" in run ? run.review : null,
