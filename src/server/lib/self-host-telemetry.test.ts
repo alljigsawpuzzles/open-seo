@@ -97,13 +97,21 @@ describe("maybeSendSelfHostHeartbeat", () => {
   });
 
   it.each(["local_noauth", "cloudflare_access"])(
-    "ignores health probes without consuming the heartbeat in %s mode",
+    "ignores health probes and public information without consuming the heartbeat in %s mode",
     async (authMode) => {
       vi.stubEnv("AUTH_MODE", authMode);
       const harness = createHarness();
 
-      await runHeartbeat(harness, "/api/health");
-      await runHeartbeat(harness, "/api/health/");
+      for (const pathname of [
+        "/api/health",
+        "/api/health/",
+        "/about",
+        "/about/",
+        "/privacy",
+        "/privacy/",
+      ]) {
+        await runHeartbeat(harness, pathname);
+      }
 
       expect(harness.claimHeartbeat).not.toHaveBeenCalled();
       expect(harness.sendHeartbeat).not.toHaveBeenCalled();

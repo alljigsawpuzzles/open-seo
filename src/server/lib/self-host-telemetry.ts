@@ -283,9 +283,20 @@ export async function maybeSendSelfHostHeartbeat(
   pathname: string,
   options: SelfHostTelemetryOptions = {},
 ) {
-  // Docker probes this endpoint every 30 seconds. Probes must not create an
-  // install, consume its heartbeat interval, or keep an idle install active.
-  if (pathname === "/api/health" || pathname === "/api/health/") return;
+  // Health probes and public information readers must not create an install,
+  // consume its heartbeat interval, or keep an idle installation active.
+  if (
+    [
+      "/api/health",
+      "/api/health/",
+      "/about",
+      "/about/",
+      "/privacy",
+      "/privacy/",
+    ].includes(pathname)
+  ) {
+    return;
+  }
 
   try {
     if (await telemetryIsDisabled()) return;
