@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getGoogleAccessToken } from "./googleOAuth";
+import { GoogleTokenError } from "@/server/lib/googleTokenErrors";
 
 const mocks = vi.hoisted(() => ({
   getGoogleOAuthClientConfig: vi.fn(),
@@ -103,7 +104,10 @@ describe("getGoogleAccessToken", () => {
 
     await expect(
       getGoogleAccessToken({ userId, providerId: "google-search-console" }),
-    ).rejects.toThrow(/cannot be refreshed/);
+    ).rejects.toMatchObject({
+      reason: "refresh_token_missing",
+      requiresReconnect: true,
+    });
     expect(mocks.fetch).not.toHaveBeenCalled();
   });
 
@@ -115,7 +119,48 @@ describe("getGoogleAccessToken", () => {
 
     await expect(
       getGoogleAccessToken({ userId, providerId: "google-analytics" }),
-    ).rejects.toThrow(/refused to refresh/);
+    ).rejects.toMatchObject({
+      reason: "unknown_error",
+      requiresReconnect: false,
+    });
+    expect(mocks.updateSet).not.toHaveBeenCalled();
+  });
+  it.each([
+    [400, "invalid_grant", true],
+    [401, "invalid_client", false],
+    [400, "unauthorized_client", false],
+    [429, "temporarily_unavailable", false],
+    [503, "invalid_grant", false],
+  ])(
+    "classifies refresh status %s and reason %s",
+    async (status, reason, requiresReconnect) => {
+      mocks.selectLimit.mockResolvedValue([
+        { ...grant, accessTokenExpiresAt: null },
+      ]);
+      mocks.fetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: reason,
+            error_description: "private upstream details",
+          }),
+          { status },
+        ),
+      );
+      await expect(
+        getGoogleAccessToken({ userId, providerId: "google-analytics" }),
+      ).rejects.toMatchObject({ reason, status, requiresReconnect });
+      expect(mocks.updateSet).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not ask for reconnection when the network fails", async () => {
+    mocks.selectLimit.mockResolvedValue([
+      { ...grant, accessTokenExpiresAt: null },
+    ]);
+    mocks.fetch.mockRejectedValue(new TypeError("network unavailable"));
+    await expect(
+      getGoogleAccessToken({ userId, providerId: "google-analytics" }),
+    ).rejects.not.toBeInstanceOf(GoogleTokenError);
     expect(mocks.updateSet).not.toHaveBeenCalled();
   });
 });
