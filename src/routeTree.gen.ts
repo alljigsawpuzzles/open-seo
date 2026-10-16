@@ -30,6 +30,7 @@ import { Route as AuthSignUpRouteImport } from './routes/_auth.sign-up'
 import { Route as AuthenticatedOauthConsentRouteImport } from './routes/_authenticated.oauth-consent'
 import { Route as AuthenticatedSubscribeRouteImport } from './routes/_authenticated.subscribe'
 import { Route as AuthenticatedYcRouteImport } from './routes/_authenticated.yc'
+import { Route as AboutGoogle701c28ee5f38fa90DothtmlRouteImport } from './routes/about/google701c28ee5f38fa90[.]html'
 import { Route as AcceptInvitationIdRouteImport } from './routes/accept-invitation.$id'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as RReportIdRouteImport } from './routes/r/$reportId'
@@ -178,6 +179,12 @@ const AuthenticatedYcRoute = AuthenticatedYcRouteImport.update({
   path: '/yc',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AboutGoogle701c28ee5f38fa90DothtmlRoute =
+  AboutGoogle701c28ee5f38fa90DothtmlRouteImport.update({
+    id: '/google701c28ee5f38fa90.html',
+    path: '/google701c28ee5f38fa90.html',
+    getParentRoute: () => AboutRoute,
+  } as any)
 const AcceptInvitationIdRoute = AcceptInvitationIdRouteImport.update({
   id: '/accept-invitation/$id',
   path: '/accept-invitation/$id',
@@ -414,7 +421,7 @@ const AppPProjectIdAuditIssuesResultIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/about': typeof AboutRoute
+  '/about': typeof AboutRouteWithChildren
   '/auth-error': typeof AuthErrorRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/privacy': typeof PrivacyRoute
@@ -431,6 +438,7 @@ export interface FileRoutesByFullPath {
   '/oauth-consent': typeof AuthenticatedOauthConsentRoute
   '/subscribe': typeof AuthenticatedSubscribeRoute
   '/yc': typeof AuthenticatedYcRoute
+  '/about/google701c28ee5f38fa90.html': typeof AboutGoogle701c28ee5f38fa90DothtmlRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/api/health': typeof ApiHealthRoute
   '/r/$reportId': typeof RReportIdRoute
@@ -477,7 +485,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
-  '/about': typeof AboutRoute
+  '/about': typeof AboutRouteWithChildren
   '/auth-error': typeof AuthErrorRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/privacy': typeof PrivacyRoute
@@ -493,6 +501,7 @@ export interface FileRoutesByTo {
   '/oauth-consent': typeof AuthenticatedOauthConsentRoute
   '/subscribe': typeof AuthenticatedSubscribeRoute
   '/yc': typeof AuthenticatedYcRoute
+  '/about/google701c28ee5f38fa90.html': typeof AboutGoogle701c28ee5f38fa90DothtmlRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/api/health': typeof ApiHealthRoute
   '/r/$reportId': typeof RReportIdRoute
@@ -538,7 +547,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/about': typeof AboutRoute
+  '/about': typeof AboutRouteWithChildren
   '/auth-error': typeof AuthErrorRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/privacy': typeof PrivacyRoute
@@ -555,6 +564,7 @@ export interface FileRoutesById {
   '/_authenticated/oauth-consent': typeof AuthenticatedOauthConsentRoute
   '/_authenticated/subscribe': typeof AuthenticatedSubscribeRoute
   '/_authenticated/yc': typeof AuthenticatedYcRoute
+  '/about/google701c28ee5f38fa90.html': typeof AboutGoogle701c28ee5f38fa90DothtmlRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/api/health': typeof ApiHealthRoute
   '/r/$reportId': typeof RReportIdRoute
@@ -621,6 +631,7 @@ export interface FileRouteTypes {
     | '/oauth-consent'
     | '/subscribe'
     | '/yc'
+    | '/about/google701c28ee5f38fa90.html'
     | '/accept-invitation/$id'
     | '/api/health'
     | '/r/$reportId'
@@ -683,6 +694,7 @@ export interface FileRouteTypes {
     | '/oauth-consent'
     | '/subscribe'
     | '/yc'
+    | '/about/google701c28ee5f38fa90.html'
     | '/accept-invitation/$id'
     | '/api/health'
     | '/r/$reportId'
@@ -744,6 +756,7 @@ export interface FileRouteTypes {
     | '/_authenticated/oauth-consent'
     | '/_authenticated/subscribe'
     | '/_authenticated/yc'
+    | '/about/google701c28ee5f38fa90.html'
     | '/accept-invitation/$id'
     | '/api/health'
     | '/r/$reportId'
@@ -794,7 +807,7 @@ export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  AboutRoute: typeof AboutRoute
+  AboutRoute: typeof AboutRouteWithChildren
   AuthErrorRoute: typeof AuthErrorRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -961,6 +974,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/yc'
       preLoaderRoute: typeof AuthenticatedYcRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/about/google701c28ee5f38fa90.html': {
+      id: '/about/google701c28ee5f38fa90.html'
+      path: '/google701c28ee5f38fa90.html'
+      fullPath: '/about/google701c28ee5f38fa90.html'
+      preLoaderRoute: typeof AboutGoogle701c28ee5f38fa90DothtmlRouteImport
+      parentRoute: typeof AboutRoute
     }
     '/accept-invitation/$id': {
       id: '/accept-invitation/$id'
@@ -1440,11 +1460,22 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface AboutRouteChildren {
+  AboutGoogle701c28ee5f38fa90DothtmlRoute: typeof AboutGoogle701c28ee5f38fa90DothtmlRoute
+}
+
+const AboutRouteChildren: AboutRouteChildren = {
+  AboutGoogle701c28ee5f38fa90DothtmlRoute:
+    AboutGoogle701c28ee5f38fa90DothtmlRoute,
+}
+
+const AboutRouteWithChildren = AboutRoute._addFileChildren(AboutRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  AboutRoute: AboutRoute,
+  AboutRoute: AboutRouteWithChildren,
   AuthErrorRoute: AuthErrorRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   PrivacyRoute: PrivacyRoute,
