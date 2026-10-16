@@ -107,6 +107,7 @@ describe("maybeSendSelfHostHeartbeat", () => {
         "/api/health/",
         "/about",
         "/about/",
+        "/about/google701c28ee5f38fa90.html",
         "/privacy",
         "/privacy/",
       ]) {
