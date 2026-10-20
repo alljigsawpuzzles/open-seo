@@ -44,7 +44,10 @@ vi.mock("@/server/billing/subscription", () => ({
 vi.mock("@/server/lib/dataforseo", () => ({
   CHATGPT_LANGUAGE_CODE: "en",
   CHATGPT_LOCATION_CODE: 2840,
-  createDataforseoClient: () => ({ aiSearch: { mentionsSearch } }),
+  createDataforseoClient: () => ({
+    aiSearch: { mentionsSearch },
+    serp: { live: async () => [] },
+  }),
 }));
 vi.mock("@/server/lib/r2-cache", () => ({
   buildCacheKey: async (prefix: string) => prefix,
@@ -111,6 +114,17 @@ describe("researchAiPrompts", () => {
         return { output: { relevant: [0, 1, 2] } };
       },
     );
+  });
+
+  it("keeps DataForSEO research available on a self-host without a generation key", async () => {
+    isHosted.mockResolvedValue(false);
+    const result = await researchAiPrompts(input, customer);
+    expect(
+      result.prompts.some((prompt) => prompt.text.includes("SEO tool")),
+    ).toBe(true);
+    expect(mentionsSearch).toHaveBeenCalled();
+    expect(generateText).not.toHaveBeenCalled();
+    expect(billResearchSpend).not.toHaveBeenCalled();
   });
 
   it("reads US English ChatGPT prompts, keeps the ones the model finds on topic, merges near-duplicates, and flags the project", async () => {

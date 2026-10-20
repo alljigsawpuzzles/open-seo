@@ -1,3 +1,4 @@
+import { relevantQuestionsWithoutModel } from "./aiPromptResearchFallback";
 import { waitUntil } from "cloudflare:workers";
 import { generateText, Output } from "ai";
 import { sortBy } from "remeda";
@@ -97,7 +98,11 @@ export async function researchAiPrompts(
       "INSUFFICIENT_CREDITS",
       "You need usage credits to research prompts.",
     );
-  const openRouterApiKey = await getRequiredEnvValue("OPENROUTER_API_KEY");
+  const optionalKey = await getOptionalEnvValue("OPENROUTER_API_KEY");
+  const manualResearch = !optionalKey && !(await isHostedServerAuthMode());
+  const openRouterApiKey = manualResearch
+    ? null
+    : (optionalKey ?? (await getRequiredEnvValue("OPENROUTER_API_KEY")));
   const state = await getTracker({ projectId: input.projectId });
   const keyword = normalizeAiSuggestion(input.keyword);
   // DataForSEO has ChatGPT prompt data only in US English.
@@ -116,15 +121,22 @@ export async function researchAiPrompts(
       .filter((prompt) => !prompt.archived)
       .map((prompt) => normalizeAiSuggestion(prompt.text)),
   );
-  const relevant = await relevantQuestions(
-    {
-      projectId: input.projectId,
-      keyword,
-      prompts: loaded.prompts,
-      openRouterApiKey,
-    },
-    customer,
-  );
+  const relevant = openRouterApiKey
+    ? await relevantQuestions(
+        {
+          projectId: input.projectId,
+          keyword,
+          prompts: loaded.prompts,
+          openRouterApiKey,
+        },
+        customer,
+      )
+    : await relevantQuestionsWithoutModel(
+        loaded.prompts,
+        keyword,
+        state.brands,
+        customer,
+      );
   const prompts = mergeNearDuplicates(
     loaded.prompts.filter((item) => relevant.has(item.question)),
   ).map((group): AiResearchedPrompt => {
