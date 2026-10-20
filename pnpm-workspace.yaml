@@ -1,4 +1,8 @@
 minimumReleaseAge: 11520
+# Native executables used by Vite and the local Cloudflare runtime.
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
 minimumReleaseAgeExclude:
   - "@every-app/*"
   # TEMPORARY (remove after 2026-10-01): DOMPurify security fix, GHSA-p98j-92pf-mc4p.
