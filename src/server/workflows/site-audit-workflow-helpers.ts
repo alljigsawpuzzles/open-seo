@@ -1,4 +1,4 @@
-import { inspectAuditRejection } from "@/server/lib/audit/rejection-details";
+import { fetchAuditPage } from "./auditPageFetch";
 import { MAX_HTML_BYTES, readTextUpTo } from "@/server/lib/audit/html-response";
 import { classifyFetch } from "@/server/lib/audit/classify-fetch";
 import type { CrawledPageResult } from "@/server/lib/audit/types";
@@ -9,8 +9,6 @@ import { normalizeUrl } from "@/server/lib/audit/url-utils";
 import type { CrawlThrottle } from "@/server/lib/audit/crawl-throttle";
 import { crawlerHeadersFor, type CrawlerAccess } from "@/shared/crawler-access";
 import type { AuditFetchDiagnostics } from "@/server/lib/audit/fetch-diagnostics";
-
-const CRAWL_USER_AGENT = "OpenSEO-Audit/1.0";
 
 /** Parse `Link: <url>; rel="canonical"` response headers. */
 function parseLinkHeaderCanonical(
@@ -28,109 +26,6 @@ function parseLinkHeaderCanonical(
   return null;
 }
 
-/**
- * Fetch one URL, pausing the whole chunk and retrying while the site 429s
- * (see crawl-throttle.ts). `responseTimeMs` is measured from the last attempt
- * so backoff waiting never looks like a slow server.
- */
-async function fetchPage(
-  url: string,
-  throttle: CrawlThrottle,
-  crawlerHeaders: Record<string, string>,
-  diagnostics?: AuditFetchDiagnostics,
-) {
-  for (let attempt = 1; ; attempt++) {
-    if (!(await throttle.ready())) return null;
-    const startedAt = Date.now();
-    // Manual redirect handling: each hop is recorded as its own page row and
-    // its target is enqueued by the frontier, so redirect chains and loops are
-    // detectable from the recorded rows. Trailing-slash redirects (/docs ->
-    // /docs/) need no special handling: normalizeUrl preserves trailing
-    // slashes, so /docs and /docs/ are distinct URLs and the redirect resolves
-    // to its canonical target instead of cycling back to its own source.
-    const request = diagnostics?.begin?.();
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        headers: {
-          "User-Agent": CRAWL_USER_AGENT,
-          Accept: "text/html,application/xhtml+xml",
-          ...crawlerHeaders,
-        },
-        redirect: "manual",
-        signal: AbortSignal.timeout(15_000),
-      });
-    } catch (error) {
-      diagnostics?.record({
-        phase: "crawl",
-        request,
-        attempt,
-        url,
-        requestHeaders: crawlerHeaders,
-        startedAt,
-        durationMs: Date.now() - startedAt,
-        status: null,
-        redirectLocation: null,
-        retryAfter: null,
-        cfCacheStatus: null,
-        cfRay: null,
-        requestId: null,
-        errorCategory:
-          error instanceof Error &&
-          (error.name === "AbortError" || error.name === "TimeoutError")
-            ? "timeout"
-            : "network",
-      });
-      throw error;
-    }
-    diagnostics?.record({
-      phase: "crawl",
-      request,
-      attempt,
-      url,
-      requestHeaders: crawlerHeaders,
-      startedAt,
-      durationMs: Date.now() - startedAt,
-      status: response.status,
-      rejection:
-        diagnostics && response.status === 429
-          ? await inspectAuditRejection(response)
-          : undefined,
-      redirectLocation: response.headers.get("location"),
-      retryAfter: response.headers.get("retry-after"),
-      cfCacheStatus: response.headers.get("cf-cache-status"),
-      cfRay: response.headers.get("cf-ray"),
-      requestId: response.headers.get("x-request-id"),
-      errorCategory: "http_response",
-    });
-    const result = {
-      response,
-      responseTimeMs: Date.now() - startedAt,
-      // A retry means an earlier attempt was 429'd; a 429 handed back after
-      // the last retry is already classified rate_limited and needs no flag.
-      rateLimited: attempt > 1,
-    };
-    // An explicit Retry-After still applies even when a rate-limit rule
-    // issues a challenge. Without that hint, hand the challenge to the
-    // existing blocked-page/rendering path instead of repeating it for minutes.
-    const challengeWithoutCooldown =
-      response.headers.get("cf-mitigated") === "challenge" &&
-      !response.headers.get("retry-after");
-    if (response.status !== 429 || challengeWithoutCooldown) {
-      await throttle.recovered();
-      return result;
-    }
-
-    const retry = await throttle.backoff(
-      attempt,
-      response.headers.get("retry-after"),
-    );
-    // The shared cooldown applies even when this URL has no retries left.
-    if (!retry) return result;
-    await response.body?.cancel();
-  }
-}
-
 /** Null leaves this URL deferred when the shared cooldown stops its fetch. */
 export async function crawlPage(
   url: string,
@@ -145,9 +40,11 @@ export async function crawlPage(
     auditId?: string;
     /** Bounded signed-audit request timeline. */
     diagnostics?: AuditFetchDiagnostics;
+    renderThrottled?: boolean;
   } = {},
 ): Promise<CrawledPageResult | null> {
   const { access, render, auditId, diagnostics } = options;
+  const renderThrottled = Boolean(render && options.renderThrottled);
   const startTime = Date.now();
   // Calculate once for this request, so the boolean we log describes the
   // exact header set passed to fetch without ever retaining its values.
@@ -159,7 +56,13 @@ export async function crawlPage(
   let renderingFailed = false;
 
   try {
-    const fetched = await fetchPage(url, throttle, crawlerHeaders, diagnostics);
+    const fetched = await fetchAuditPage(
+      url,
+      throttle,
+      crawlerHeaders,
+      diagnostics,
+      renderThrottled,
+    );
     if (!fetched) return null;
     const { response, responseTimeMs, rateLimited } = fetched;
     statusCode = response.status;
@@ -188,7 +91,7 @@ export async function crawlPage(
     }
 
     const contentType = response.headers.get("content-type") ?? "";
-    const isHtml = contentType.includes("text/html");
+    let isHtml = contentType.includes("text/html");
     // Cap what we read: the first 1 MiB still contains the SEO metadata and
     // navigation needed by the audit in normal documents.
     let body = isHtml ? await readTextUpTo(response, MAX_HTML_BYTES) : "";
@@ -198,23 +101,26 @@ export async function crawlPage(
       body.slice(0, 4_000),
     );
 
-    // Rendering replaces the body of a readable HTML page, or of a bot
-    // challenge, with what the browser loaded. Redirects, non-HTML files,
-    // origin errors, login walls and rate limits keep their existing paths.
-    // The direct response's timing and headers stay authoritative.
+    // Rendering replaces the body of a readable HTML page, a bot challenge, or
+    // a throttled Shopify page with what the browser loaded. Redirects,
+    // non-HTML files, origin errors, login walls and other rate limits keep
+    // their existing paths. The direct response's timing and headers stay
+    // authoritative.
     const challenged = fetchClass === "blocked" && statusCode !== 401;
+    const throttled = renderThrottled && statusCode === 429;
     if (
       render &&
-      isHtml &&
-      (challenged || (fetchClass === "ok" && statusCode < 400))
+      (throttled ||
+        (isHtml && (challenged || (fetchClass === "ok" && statusCode < 400))))
     ) {
       try {
         renderAttempted = true;
         const page = await render(url);
         body = page.html;
-        // A challenge's status was never the page's. Browser Run reports the
-        // status it loaded; Context returns only pages that loaded.
-        if (challenged) statusCode = page.status ?? 200;
+        isHtml = true;
+        // A challenge's or a 429's status was never the page's. Browser Run
+        // reports the status it loaded; Context returns only pages that loaded.
+        if (challenged || throttled) statusCode = page.status ?? 200;
         // The renderer can be challenged where the direct fetch was not.
         fetchClass = classifyFetch(statusCode, false, body.slice(0, 4_000));
       } catch {
@@ -230,6 +136,8 @@ export async function crawlPage(
           redirectOutcome: "not_followed",
           errorCategory: "render_failed",
         });
+        if (throttled)
+          await throttle.backoff(1, response.headers.get("retry-after"));
       }
     }
 
