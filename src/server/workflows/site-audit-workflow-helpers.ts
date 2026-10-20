@@ -38,6 +38,8 @@ async function fetchPage(
   throttle: CrawlThrottle,
   crawlerHeaders: Record<string, string>,
   diagnostics?: AuditFetchDiagnostics,
+  /** Hand a Shopify 429 to rendering without backing off first. */
+  skipBackoff = false,
 ) {
   for (let attempt = 1; ; attempt++) {
     if (!(await throttle.ready())) return null;
@@ -120,6 +122,7 @@ async function fetchPage(
       await throttle.recovered();
       return result;
     }
+    if (skipBackoff) return result;
 
     const retry = await throttle.backoff(
       attempt,
@@ -145,9 +148,11 @@ export async function crawlPage(
     auditId?: string;
     /** Bounded signed-audit request timeline. */
     diagnostics?: AuditFetchDiagnostics;
+    renderThrottled?: boolean;
   } = {},
 ): Promise<CrawledPageResult | null> {
   const { access, render, auditId, diagnostics } = options;
+  const renderThrottled = Boolean(render && options.renderThrottled);
   const startTime = Date.now();
   // Calculate once for this request, so the boolean we log describes the
   // exact header set passed to fetch without ever retaining its values.
@@ -159,7 +164,13 @@ export async function crawlPage(
   let renderingFailed = false;
 
   try {
-    const fetched = await fetchPage(url, throttle, crawlerHeaders, diagnostics);
+    const fetched = await fetchPage(
+      url,
+      throttle,
+      crawlerHeaders,
+      diagnostics,
+      renderThrottled,
+    );
     if (!fetched) return null;
     const { response, responseTimeMs, rateLimited } = fetched;
     statusCode = response.status;
@@ -188,7 +199,7 @@ export async function crawlPage(
     }
 
     const contentType = response.headers.get("content-type") ?? "";
-    const isHtml = contentType.includes("text/html");
+    let isHtml = contentType.includes("text/html");
     // Cap what we read: the first 1 MiB still contains the SEO metadata and
     // navigation needed by the audit in normal documents.
     let body = isHtml ? await readTextUpTo(response, MAX_HTML_BYTES) : "";
@@ -198,23 +209,26 @@ export async function crawlPage(
       body.slice(0, 4_000),
     );
 
-    // Rendering replaces the body of a readable HTML page, or of a bot
-    // challenge, with what the browser loaded. Redirects, non-HTML files,
-    // origin errors, login walls and rate limits keep their existing paths.
-    // The direct response's timing and headers stay authoritative.
+    // Rendering replaces the body of a readable HTML page, a bot challenge, or
+    // a throttled Shopify page with what the browser loaded. Redirects,
+    // non-HTML files, origin errors, login walls and other rate limits keep
+    // their existing paths. The direct response's timing and headers stay
+    // authoritative.
     const challenged = fetchClass === "blocked" && statusCode !== 401;
+    const throttled = renderThrottled && statusCode === 429;
     if (
       render &&
-      isHtml &&
-      (challenged || (fetchClass === "ok" && statusCode < 400))
+      (throttled ||
+        (isHtml && (challenged || (fetchClass === "ok" && statusCode < 400))))
     ) {
       try {
         renderAttempted = true;
         const page = await render(url);
         body = page.html;
-        // A challenge's status was never the page's. Browser Run reports the
-        // status it loaded; Context returns only pages that loaded.
-        if (challenged) statusCode = page.status ?? 200;
+        isHtml = true;
+        // A challenge's or a 429's status was never the page's. Browser Run
+        // reports the status it loaded; Context returns only pages that loaded.
+        if (challenged || throttled) statusCode = page.status ?? 200;
         // The renderer can be challenged where the direct fetch was not.
         fetchClass = classifyFetch(statusCode, false, body.slice(0, 4_000));
       } catch {
@@ -230,6 +244,8 @@ export async function crawlPage(
           redirectOutcome: "not_followed",
           errorCategory: "render_failed",
         });
+        if (throttled)
+          await throttle.backoff(1, response.headers.get("retry-after"));
       }
     }
 

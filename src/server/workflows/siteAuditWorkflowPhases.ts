@@ -85,8 +85,7 @@ export async function runAuditPhases(
   // desync the frontier from already-persisted crawl batches).
   const robots = parseRobotsTxt(origin, discovery.robotsText);
   const crawl = await runCrawlPhase(step, {
-    auditId,
-    workflowInstanceId,
+    ...params,
     origin,
     maxPages,
     robots,
@@ -95,6 +94,7 @@ export async function runAuditPhases(
     renderUsage,
     access,
     diagnostics,
+    sitePlatform: config.sitePlatform,
   });
   await runLighthousePhase(step, {
     auditId,

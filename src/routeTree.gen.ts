@@ -33,6 +33,7 @@ import { Route as AuthenticatedYcRouteImport } from './routes/_authenticated.yc'
 import { Route as AboutGoogle701c28ee5f38fa90DothtmlRouteImport } from './routes/about/google701c28ee5f38fa90[.]html'
 import { Route as AcceptInvitationIdRouteImport } from './routes/accept-invitation.$id'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiPrivacyRegionRouteImport } from './routes/api/privacy-region'
 import { Route as RReportIdRouteImport } from './routes/r/$reportId'
 import { Route as AppBillingFixPaymentRouteImport } from './routes/_app/billing_.fix-payment'
 import { Route as AppHelpDataforseoApiKeyRouteImport } from './routes/_app/help/dataforseo-api-key'
@@ -193,6 +194,11 @@ const AcceptInvitationIdRoute = AcceptInvitationIdRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPrivacyRegionRoute = ApiPrivacyRegionRouteImport.update({
+  id: '/api/privacy-region',
+  path: '/api/privacy-region',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RReportIdRoute = RReportIdRouteImport.update({
@@ -441,6 +447,7 @@ export interface FileRoutesByFullPath {
   '/about/google701c28ee5f38fa90.html': typeof AboutGoogle701c28ee5f38fa90DothtmlRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/privacy-region': typeof ApiPrivacyRegionRoute
   '/r/$reportId': typeof RReportIdRoute
   '/p/$projectId': typeof AppPProjectIdRouteRouteWithChildren
   '/billing/fix-payment': typeof AppBillingFixPaymentRoute
@@ -504,6 +511,7 @@ export interface FileRoutesByTo {
   '/about/google701c28ee5f38fa90.html': typeof AboutGoogle701c28ee5f38fa90DothtmlRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/privacy-region': typeof ApiPrivacyRegionRoute
   '/r/$reportId': typeof RReportIdRoute
   '/billing/fix-payment': typeof AppBillingFixPaymentRoute
   '/help/dataforseo-api-key': typeof AppHelpDataforseoApiKeyRoute
@@ -567,6 +575,7 @@ export interface FileRoutesById {
   '/about/google701c28ee5f38fa90.html': typeof AboutGoogle701c28ee5f38fa90DothtmlRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/privacy-region': typeof ApiPrivacyRegionRoute
   '/r/$reportId': typeof RReportIdRoute
   '/_app/': typeof AppIndexRoute
   '/_app/p/$projectId': typeof AppPProjectIdRouteRouteWithChildren
@@ -634,6 +643,7 @@ export interface FileRouteTypes {
     | '/about/google701c28ee5f38fa90.html'
     | '/accept-invitation/$id'
     | '/api/health'
+    | '/api/privacy-region'
     | '/r/$reportId'
     | '/p/$projectId'
     | '/billing/fix-payment'
@@ -697,6 +707,7 @@ export interface FileRouteTypes {
     | '/about/google701c28ee5f38fa90.html'
     | '/accept-invitation/$id'
     | '/api/health'
+    | '/api/privacy-region'
     | '/r/$reportId'
     | '/billing/fix-payment'
     | '/help/dataforseo-api-key'
@@ -759,6 +770,7 @@ export interface FileRouteTypes {
     | '/about/google701c28ee5f38fa90.html'
     | '/accept-invitation/$id'
     | '/api/health'
+    | '/api/privacy-region'
     | '/r/$reportId'
     | '/_app/'
     | '/_app/p/$projectId'
@@ -816,6 +828,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OpenaiAppsChallengeRoute: typeof Char91DotwellKnownChar93OpenaiAppsChallengeRoute
   AcceptInvitationIdRoute: typeof AcceptInvitationIdRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiPrivacyRegionRoute: typeof ApiPrivacyRegionRoute
   RReportIdRoute: typeof RReportIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAutumnSplatRoute: typeof ApiAutumnSplatRoute
@@ -994,6 +1007,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/privacy-region': {
+      id: '/api/privacy-region'
+      path: '/api/privacy-region'
+      fullPath: '/api/privacy-region'
+      preLoaderRoute: typeof ApiPrivacyRegionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/r/$reportId': {
@@ -1485,6 +1505,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OpenaiAppsChallengeRoute,
   AcceptInvitationIdRoute: AcceptInvitationIdRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiPrivacyRegionRoute: ApiPrivacyRegionRoute,
   RReportIdRoute: RReportIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAutumnSplatRoute: ApiAutumnSplatRoute,
