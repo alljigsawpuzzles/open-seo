@@ -1,3 +1,5 @@
+import { GoogleTokenError } from "./googleTokenErrors";
+
 export class Ga4AdminApiError extends Error {
   constructor(
     public readonly status: number,
@@ -15,6 +17,12 @@ export class Ga4TokenError extends Error {
   ) {
     super(message);
     this.name = "Ga4TokenError";
+  }
+
+  get requiresReconnect(): boolean {
+    return (
+      this.cause instanceof GoogleTokenError && this.cause.requiresReconnect
+    );
   }
 }
 
