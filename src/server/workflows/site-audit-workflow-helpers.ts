@@ -59,7 +59,7 @@ export async function crawlPage(
     const fetched = await fetchAuditPage(
       url,
       throttle,
-      crawlerHeaders,
+      access,
       diagnostics,
       renderThrottled,
     );
@@ -123,9 +123,10 @@ export async function crawlPage(
         if (challenged || throttled) statusCode = page.status ?? 200;
         // The renderer can be challenged where the direct fetch was not.
         fetchClass = classifyFetch(statusCode, false, body.slice(0, 4_000));
-      } catch {
+      } catch (error) {
         // Preserve readable initial HTML when optional rendering fails.
         // A challenge is never usable content and must remain blocked.
+        if (!challenged && !throttled) throw error;
         renderingFailed = true;
         logCrawlFailure({
           auditId,
@@ -136,8 +137,9 @@ export async function crawlPage(
           redirectOutcome: "not_followed",
           errorCategory: "render_failed",
         });
-        if (throttled)
-          await throttle.backoff(1, response.headers.get("retry-after"));
+        if (throttled) {
+          await throttle.refuse(url, response.headers.get("retry-after"));
+        }
       }
     }
 

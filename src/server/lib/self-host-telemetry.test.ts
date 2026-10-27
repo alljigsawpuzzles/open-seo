@@ -150,6 +150,7 @@ describe("maybeSendSelfHostHeartbeat", () => {
 
   it.each([
     ["AUTH_MODE", "hosted"],
+    ["AUTH_MODE", "everyapp"],
     ["OPENSEO_TELEMETRY_DISABLED", "1"],
     ["DO_NOT_TRACK", "1"],
   ])("does not send when %s=%s", async (name, value) => {

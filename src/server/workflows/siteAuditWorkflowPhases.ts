@@ -9,6 +9,7 @@ import {
 } from "@/server/lib/audit/lighthouse";
 import {
   getOrigin,
+  isAuditablePageUrl,
   isSameOrigin,
   normalizeUrl,
 } from "@/server/lib/audit/url-utils";
@@ -55,6 +56,8 @@ type AuditPhasesParams = {
   access?: CrawlerAccess | null;
   renderUsage: RenderUsage;
   diagnostics?: AuditFetchDiagnostics;
+  /** A metered rendered audit's credit hold, which the crawl must stay in. */
+  renderHold?: { deadlineAt: number; credits: number };
 };
 
 export async function runAuditPhases(
@@ -159,6 +162,7 @@ async function runDiscoveryPhase(
       seen.add(normalized);
       if (!isSameOrigin(normalized, origin)) continue;
       if (!isCrawlableUrl(normalized)) continue;
+      if (!isAuditablePageUrl(normalized)) continue;
       if (!robots.isAllowed(normalized)) continue;
       seeds.push(normalized);
     }
@@ -377,9 +381,9 @@ async function finalizeAudit(args: {
       issueCount: linkIssues.length,
     });
     issues.push(...linkIssues);
-    if (crawl.rateLimited) {
+    if (crawl.stoppedBy) {
       issues.push({
-        issueType: "crawl-rate-limited",
+        issueType: crawl.stoppedBy,
         pageId: null,
         pageUrl: startUrl,
       });
