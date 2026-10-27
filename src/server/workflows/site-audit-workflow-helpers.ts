@@ -124,13 +124,9 @@ export async function crawlPage(
         // The renderer can be challenged where the direct fetch was not.
         fetchClass = classifyFetch(statusCode, false, body.slice(0, 4_000));
       } catch {
-        if (challenged || throttled) {
-          // A challenge that neither renderer passed stays blocked; a
-          // throttled page neither renderer read is given up as rate limited.
-          if (throttled) {
-            await throttle.refuse(url, response.headers.get("retry-after"));
-          }
-        } else {
+        if (throttled) {
+          await throttle.refuse(url, response.headers.get("retry-after"));
+        } else if (!challenged) {
           // Preserve readable initial HTML when optional rendering fails.
           renderingFailed = true;
           logCrawlFailure({
