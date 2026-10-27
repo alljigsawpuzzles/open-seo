@@ -1,6 +1,8 @@
 import type { AuditFetchDiagnostics } from "./fetch-diagnostics";
 import { AppError } from "@/server/lib/errors";
-import { crawlerHeadersFor, type CrawlerAccess } from "@/shared/crawler-access";
+import { publicFetch } from "@/server/lib/public-fetch";
+import type { CrawlerAccess } from "@/shared/crawler-access";
+import { auditRequestHeaders } from "@/server/lib/audit/web-bot-auth";
 
 const BLOCKED_HOSTS = new Set([
   "localhost",
@@ -282,15 +284,12 @@ export async function resolveStartUrlRedirects(
     let response: Response;
     const startedAt = Date.now();
     const request = diagnostics?.begin?.();
-    const headers = {
-      "User-Agent": "OpenSEO-Audit/1.0",
-      ...crawlerHeadersFor(current, access),
-    };
+    const requestHeaders = await auditRequestHeaders(current, access);
     try {
-      response = await fetch(current, {
+      response = await publicFetch(current, {
         method: "HEAD",
         redirect: "manual",
-        headers,
+        headers: requestHeaders,
         signal: AbortSignal.timeout(START_URL_PROBE_TIMEOUT_MS),
       });
     } catch (error) {
@@ -300,7 +299,7 @@ export async function resolveStartUrlRedirects(
         redirectHop: hop,
         request,
         url: current,
-        requestHeaders: headers,
+        requestHeaders,
         startedAt,
         durationMs: Date.now() - startedAt,
         status: null,
@@ -323,7 +322,7 @@ export async function resolveStartUrlRedirects(
       redirectHop: hop,
       request,
       url: current,
-      requestHeaders: headers,
+      requestHeaders,
       startedAt,
       durationMs: Date.now() - startedAt,
       status: response.status,

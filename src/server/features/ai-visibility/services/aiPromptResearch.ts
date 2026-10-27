@@ -18,11 +18,14 @@ import {
   createDataforseoClient,
 } from "@/server/lib/dataforseo";
 import { AppError } from "@/server/lib/errors";
-import { buildChatAgentModel } from "@/server/lib/openrouter";
+import {
+  buildChatAgentModel,
+  requireOpenRouterAccess,
+  type OpenRouterAccess,
+} from "@/server/lib/openrouter";
 import { buildCacheKey, getCached, setCached } from "@/server/lib/r2-cache";
 import {
   getOptionalEnvValue,
-  getRequiredEnvValue,
   isHostedServerAuthMode,
 } from "@/server/lib/runtime-env";
 import { normalizeAiSuggestion } from "@/shared/ai-prompt-suggestions";
@@ -100,9 +103,11 @@ export async function researchAiPrompts(
     );
   const optionalKey = await getOptionalEnvValue("OPENROUTER_API_KEY");
   const manualResearch = !optionalKey && !(await isHostedServerAuthMode());
-  const openRouterApiKey = manualResearch
+  const openRouter: OpenRouterAccess | null = manualResearch
     ? null
-    : (optionalKey ?? (await getRequiredEnvValue("OPENROUTER_API_KEY")));
+    : optionalKey
+      ? { apiKey: optionalKey }
+      : await requireOpenRouterAccess();
   const state = await getTracker({ projectId: input.projectId });
   const keyword = normalizeAiSuggestion(input.keyword);
   // DataForSEO has ChatGPT prompt data only in US English.
@@ -121,13 +126,13 @@ export async function researchAiPrompts(
       .filter((prompt) => !prompt.archived)
       .map((prompt) => normalizeAiSuggestion(prompt.text)),
   );
-  const relevant = openRouterApiKey
+  const relevant = openRouter
     ? await relevantQuestions(
         {
           projectId: input.projectId,
           keyword,
           prompts: loaded.prompts,
-          openRouterApiKey,
+          openRouter,
         },
         customer,
       )
@@ -235,7 +240,7 @@ async function relevantQuestions(
     projectId: string;
     keyword: string;
     prompts: CachedPrompt[];
-    openRouterApiKey: string;
+    openRouter: OpenRouterAccess;
   },
   customer: BillingCustomerContext,
 ): Promise<Set<string>> {
@@ -270,7 +275,7 @@ async function relevantQuestions(
 
   const result = await generateText({
     model: buildChatAgentModel(
-      input.openRouterApiKey,
+      input.openRouter,
       await getOptionalEnvValue("OPENROUTER_MODEL"),
       "low",
     ),

@@ -9,6 +9,7 @@ import {
 } from "@/server/lib/audit/lighthouse";
 import {
   getOrigin,
+  isAuditablePageUrl,
   isSameOrigin,
   normalizeUrl,
 } from "@/server/lib/audit/url-utils";
@@ -17,7 +18,6 @@ import { AuditRepository } from "@/server/features/audit/repositories/AuditRepos
 import { getAuditScratchpad } from "@/server/features/audit/AuditScratchpad";
 import { AuditProgressKV } from "@/server/lib/audit/progress-kv";
 import { runMultipageChecks } from "@/server/lib/audit/issues/multipage";
-import type { DetectedIssue } from "@/server/lib/audit/issues/page-reporters";
 import type { AuditConfig } from "@/server/lib/audit/types";
 import type { CrawlerAccess } from "@/shared/crawler-access";
 import type { RenderUsage } from "@/shared/audit-rendering";
@@ -27,6 +27,7 @@ import {
   runCrawlPhase,
   type CrawlPhaseResult,
 } from "@/server/workflows/siteAuditWorkflowCrawl";
+import { runScratchpadLinkChecks } from "@/server/workflows/siteAuditScratchpadLinkChecks";
 import { pgStep } from "@/server/workflows/pgStep";
 import {
   DB_STEP,
@@ -55,6 +56,8 @@ type AuditPhasesParams = {
   access?: CrawlerAccess | null;
   renderUsage: RenderUsage;
   diagnostics?: AuditFetchDiagnostics;
+  /** A metered rendered audit's credit hold, which the crawl must stay in. */
+  renderHold?: { deadlineAt: number; credits: number };
 };
 
 export async function runAuditPhases(
@@ -159,6 +162,7 @@ async function runDiscoveryPhase(
       seen.add(normalized);
       if (!isSameOrigin(normalized, origin)) continue;
       if (!isCrawlableUrl(normalized)) continue;
+      if (!isAuditablePageUrl(normalized)) continue;
       if (!robots.isAllowed(normalized)) continue;
       seeds.push(normalized);
     }
@@ -377,9 +381,9 @@ async function finalizeAudit(args: {
       issueCount: linkIssues.length,
     });
     issues.push(...linkIssues);
-    if (crawl.rateLimited) {
+    if (crawl.stoppedBy) {
       issues.push({
-        issueType: "crawl-rate-limited",
+        issueType: crawl.stoppedBy,
         pageId: null,
         pageUrl: startUrl,
       });
@@ -426,38 +430,4 @@ async function finalizeAudit(args: {
     // Crawl scratch state (frontier, links, mirror) is no longer needed.
     await getAuditScratchpad(auditId).destroy();
   });
-}
-
-/**
- * The two finalize checks that need link edges run as SQL inside the
- * audit's scratchpad DO; map their rows onto DetectedIssue.
- */
-async function runScratchpadLinkChecks(
-  auditId: string,
-  startUrl: string,
-  crawl: CrawlPhaseResult,
-): Promise<DetectedIssue[]> {
-  const scratchpad = getAuditScratchpad(auditId);
-  const { brokenLinks, orphanPages } = await scratchpad.runFinalizeChecks({
-    // Page rows store normalized URLs; normalize the start URL the same way
-    // so the orphan exclusion matches.
-    startUrl: normalizeUrl(startUrl) ?? startUrl,
-    // Orphan detection only makes sense when the crawl wasn't truncated.
-    crawlCompleted: crawl.completed,
-  });
-
-  return [
-    ...brokenLinks.map((row) => ({
-      issueType: "broken-internal-link" as const,
-      pageId: row.sourcePageId,
-      pageUrl: row.sourceUrl,
-      dedupeKey: row.targetUrl,
-      details: { targetUrl: row.targetUrl, targetStatus: row.targetStatus },
-    })),
-    ...orphanPages.map((row) => ({
-      issueType: "orphan-page" as const,
-      pageId: row.pageId,
-      pageUrl: row.url,
-    })),
-  ];
 }
