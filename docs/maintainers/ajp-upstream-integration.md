@@ -10,7 +10,7 @@ Secret-free progress record for the self-hosted fork. Private operational detail
 | Fork `origin/main`                       | `ff093c2f` (matches v0.1.14 worktree)                                    |
 | Stale checkout (do not use for upgrades) | `/home/geoffajp/dev/open-seo` @ `3564a19f` (`codex/droplet-development`) |
 | Integration worktree                     | `/home/geoffajp/dev/open-seo-v0.1.19`                                    |
-| Integration branch                       | `codex/upgrade-openseo-v0.1.19` (see PR #22 tip)                         |
+| Integration branch                       | `codex/upgrade-openseo-v0.1.19` @ **`b58deab3`** (PR #22)                |
 | Draft PR                                 | https://github.com/alljigsawpuzzles/open-seo/pull/22                     |
 | Upstream target tag                      | `v0.1.19` → `99d9a49c`                                                   |
 | Upstream v0.1.14 tag                     | `8713d753` (merge-base with fork)                                        |
@@ -50,15 +50,20 @@ Resolved eight conflict regions by combining upstream v0.1.16–v0.19 crawler/au
 
 ## Validation (droplet, 2026-10-27)
 
-| Check                                | Result                                                                     |
-| ------------------------------------ | -------------------------------------------------------------------------- |
-| `pnpm ci:check`                      | Passed at `c5776f55` (oxlint needs ~6 GB Node heap on this machine)        |
-| Vitest                               | **1847+** (incl. `openRouterKeyGateAccess.test.ts` after gate fix)         |
-| Selfhost build (`cloudflare_access`) | Passed                                                                     |
-| Wrangler dry-run                     | `open-seo-selfhost` (43 bindings), `open-seo-selfhost-audit` (18 bindings) |
-| Migration rehearsal                  | 0059–0062 on private SQLite copy; FK 0; 0055 skipped; ledger **62**        |
+**Publication prep revision:** `b58deab3574c1eea981be80ce5ce13b6a02b9f40`
 
-Private logs: `/home/geoffajp/openseo-release-review/v0.1.19/` (not in git).
+| Check                                | Result                                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `pnpm ci:check`                      | **Passed** @ `b58deab3` (`NODE_OPTIONS='--max-old-space-size=6144'`)                        |
+| Vitest                               | **1852** @ `29c83fb4` (not part of `ci:check`; rerun optional before deploy)                |
+| Selfhost build (`cloudflare_access`) | **Passed** @ `b58deab3` via `prepare-v19-build.mjs` (no `.env.local`; prod `AUTH_MODE` env) |
+| Wrangler dry-run                     | **Passed** — app **43** bindings, audit **18** (see `release-build-validation.json`)          |
+| Auth bake-in                         | Client references `cloudflare_access`; `local_noauth` only in shared auth-mode enum strings |
+| Migration rehearsal                  | **0060–0062** on live export copy; **0055** excluded (ledger rehearsal unchanged)            |
+
+Private artifact: `/home/geoffajp/openseo-release-review/v0.1.19/release-build-validation.json`
+
+Preview-only env (not used for build): `/home/geoffajp/openseo-handover/2026-10-27-preview.env.local.bak`
 
 ## Next steps
 

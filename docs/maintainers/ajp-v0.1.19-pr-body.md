@@ -2,39 +2,33 @@
 
 ## TL;DR
 
-Merge upstream **v0.1.19** onto fork baseline **v0.1.14** (`ff093c2f`), preserving Cloudflare Access production auth, crawler diagnostics, DataForSEO-only AI paths, and the deliberate skip of migration **0055**.
+Merge upstream **v0.1.19** onto fork baseline **v0.1.14** (`ff093c2f`), preserving Cloudflare Access production auth, crawler diagnostics, DataForSEO-only AI paths, and **no** migration **0055**.
+
+**Verified revision:** `b58deab3574c1eea981be80ce5ce13b6a02b9f40` (droplet publication prep, 2026-10-27)
 
 **Compatibility:** [`docs/maintainers/ajp-v0.1.19-compatibility.md`](docs/maintainers/ajp-v0.1.19-compatibility.md)
 
-**Gate fix:** upstream v0.1.18 `OpenRouterKeyGate` blocked DataForSEO-only staff UI; bypass when `generationAvailable === false`.
+**Follow-up (not this PR):** Shopify signature/challenge crawls; rank progress/cost/alert UX.
 
-**Verified @ PR tip** (see below). **Not merged or deployed.**
+## Droplet validation @ `b58deab3`
 
-**Follow-up (out of scope for this PR):** Shopify signature/challenge crawl reliability; rank-check progress/cost/alert UX (Oct 2026 findings).
+| Check | Result |
+| ----- | ------ |
+| `pnpm ci:check` | Pass (`NODE_OPTIONS='--max-old-space-size=6144'`) |
+| Production build | Pass — `AUTH_MODE=cloudflare_access` from live binding snapshot; **no** preview `.env.local` |
+| Wrangler dry-run | Pass — app 43 bindings, audit 18 bindings |
+| Artifact | `openseo-release-review/v0.1.19/release-build-validation.json` (private) |
 
-## Verification (2026-10-27)
-
-| Check                              | Result                                                                                                                                                    |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vitest                             | **1852** passed (266 files), incl. gate policy + manual AI setup                                                                                          |
-| Browser (local)                    | `AUTH_MODE=local_noauth`, local D1, no OpenRouter/DataForSEO keys — AI Visibility, Prompt Research, Prompt Explorer reachable **without** OpenRouter gate |
-| `pnpm ci:check`                    | Re-run on **droplet** before deploy (OOM on 8GB agent host during this pass)                                                                              |
-| Selfhost build + Wrangler dry-runs | Refresh on droplet @ merged SHA after merge (last full pass @ `c5776f55`; gate fix is small)                                                              |
-
-## What should happen?
-
-- Merge after Geoff approves rollout doc and migration allowlist (**0060–0062** only).
-- Production stays `AUTH_MODE=cloudflare_access`.
-- Post-deploy smoke: staff AI paths without OpenRouter (no gate card).
-
-## Test plan
-
-- [x] Read compatibility doc
-- [x] OpenRouter gate — unit + browser (local_noauth)
-- [ ] `pnpm ci:check` on droplet @ final SHA
-- [ ] Selfhost build + dry-runs on droplet
-- [ ] Approve `ajp-v0.1.19-rollout.md` before D1/Workers
+Browser: local_noauth gate smoke documented in compatibility doc (not production auth).
 
 ## Rollout
 
-`docs/maintainers/ajp-v0.1.19-rollout.md`
+[`docs/maintainers/ajp-v0.1.19-rollout.md`](docs/maintainers/ajp-v0.1.19-rollout.md) — D1 **0060–0062** only after approval; Workers cutover together; crons paused per plan.
+
+## Test plan
+
+- [x] Droplet `ci:check` + production build + dry-runs @ `b58deab3`
+- [ ] Geoff approves merge + rollout doc
+- [ ] Post-deploy: AI staff paths without OpenRouter; Access smoke
+
+**Not merged or deployed with this PR description update.**

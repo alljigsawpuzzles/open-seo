@@ -5,8 +5,8 @@ Maintainer approval required before production changes. This document is the pub
 ## Merge commit
 
 - **PR:** https://github.com/alljigsawpuzzles/open-seo/pull/22 (draft)
-- **Proposed merge commit:** `77a9e5555f5d8add0e9f5f0258e74b467238ca26` (or newer tip of `codex/upgrade-openseo-v0.1.19` if docs-only commits land first)
-- **Build validated on droplet at:** `c5776f55` (same tree as merge minus status-doc commit; rebuild from merged SHA before upload)
+- **Proposed merge commit:** **`b58deab3574c1eea981be80ce5ce13b6a02b9f40`** (PR #22 tip after droplet `ci:check` + dry-runs)
+- **Build validated on droplet at:** `b58deab3` — `release-build-validation.json` (2026-10-27)
 
 ## Live production state (read 2026-10-27, no writes)
 
@@ -82,8 +82,9 @@ No auth mode change, secret rotation, or Shopify rule edits in this plan.
 
 ## Validation already completed (droplet)
 
-- `pnpm ci:check`, Vitest **1847**, selfhost build, Wrangler dry-runs (see `ajp-upstream-integration.md`).
-- GitHub Actions CI **not run** on PR #22 — see integration doc (Actions disabled on repo).
+- **`b58deab3`:** `pnpm ci:check` (6144 MB heap), selfhost build with **`AUTH_MODE=cloudflare_access`** from production binding snapshot (preview `.env.local` removed), both Worker dry-runs — `/home/geoffajp/openseo-release-review/v0.1.19/release-build-validation.json`
+- Vitest **1852** @ `29c83fb4` (gate fix); not gated by `ci:check`
+- GitHub Actions CI **not run** on PR #22 — Actions disabled on repo
 
 ## Compatibility review (2026-10-27)
 
