@@ -14,12 +14,12 @@ Merge upstream **v0.1.19** onto fork baseline **v0.1.14** (`ff093c2f`), preservi
 
 ## Verification (2026-10-27)
 
-| Check | Result |
-| ----- | ------ |
-| Vitest | **1852** passed (266 files), incl. gate policy + manual AI setup |
-| Browser (local) | `AUTH_MODE=local_noauth`, local D1, no OpenRouter/DataForSEO keys — AI Visibility, Prompt Research, Prompt Explorer reachable **without** OpenRouter gate |
-| `pnpm ci:check` | Re-run on **droplet** before deploy (OOM on 8GB agent host during this pass) |
-| Selfhost build + Wrangler dry-runs | Refresh on droplet @ merged SHA after merge (last full pass @ `c5776f55`; gate fix is small) |
+| Check                              | Result                                                                                                                                                    |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vitest                             | **1852** passed (266 files), incl. gate policy + manual AI setup                                                                                          |
+| Browser (local)                    | `AUTH_MODE=local_noauth`, local D1, no OpenRouter/DataForSEO keys — AI Visibility, Prompt Research, Prompt Explorer reachable **without** OpenRouter gate |
+| `pnpm ci:check`                    | Re-run on **droplet** before deploy (OOM on 8GB agent host during this pass)                                                                              |
+| Selfhost build + Wrangler dry-runs | Refresh on droplet @ merged SHA after merge (last full pass @ `c5776f55`; gate fix is small)                                                              |
 
 ## What should happen?
 

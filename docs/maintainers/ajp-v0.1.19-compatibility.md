@@ -71,23 +71,23 @@ Compared **fork baseline** `ff093c2f` (deployed v0.1.14), **integration branch**
 
 ## OpenRouterKeyGate investigation (2026-10-27)
 
-| Check                 | Result                                                                                                               |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Upstream v0.1.19 gate | Identical to v0.1.18; blocks all child routes including `/ai-visibility/research`.                                   |
-| Server without key    | `getAiResearchSetup` → `status: "manual"`, `generationAvailable: false` (tests).                                     |
-| PR before gate fix    | **Regression**: staff DataForSEO-only UI unreachable despite server support.                                         |
-| PR after gate fix     | `bypassOpenRouterKeyGate` when `generationAvailable === false` on self-host.                                         |
+| Check                 | Result                                                                             |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| Upstream v0.1.19 gate | Identical to v0.1.18; blocks all child routes including `/ai-visibility/research`. |
+| Server without key    | `getAiResearchSetup` → `status: "manual"`, `generationAvailable: false` (tests).   |
+| PR before gate fix    | **Regression**: staff DataForSEO-only UI unreachable despite server support.       |
+| PR after gate fix     | `bypassOpenRouterKeyGate` when `generationAvailable === false` on self-host.       |
 
 ### Browser verification (isolated local, 2026-10-27)
 
 Environment: `.env.local` with `AUTH_MODE=local_noauth`, `PORT=3020`, **no** `OPENROUTER_API_KEY` or `DATAFORSEO_API_KEY`; `pnpm db:migrate:local` → Wrangler local D1 only (no production bindings). Project `example.com` set on local `projects` row so `ProjectWebsiteGate` passes.
 
-| Route | Result |
-| ----- | ------ |
-| `/p/…/ai-visibility` | **Pass** — heading “Prompt Tracking”, “Add prompts”; **no** “Add an OpenRouter API key”. |
-| `/p/…/ai-visibility/research` | **Pass** — heading “Prompt Research”; **no** OpenRouter gate. |
-| `/p/…/prompt-explorer` | **Pass** — Prompt Explorer nav active; **no** OpenRouter gate. |
-| `/ai` (Agent setup) | **Pass** — MCP setup page loads (SAM/OpenRouter is separate from AI visibility gate). |
+| Route                         | Result                                                                                   |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| `/p/…/ai-visibility`          | **Pass** — heading “Prompt Tracking”, “Add prompts”; **no** “Add an OpenRouter API key”. |
+| `/p/…/ai-visibility/research` | **Pass** — heading “Prompt Research”; **no** OpenRouter gate.                            |
+| `/p/…/prompt-explorer`        | **Pass** — Prompt Explorer nav active; **no** OpenRouter gate.                           |
+| `/ai` (Agent setup)           | **Pass** — MCP setup page loads (SAM/OpenRouter is separate from AI visibility gate).    |
 
 Separate **DataForSEO** onboarding modal may overlay the UI; it is unrelated to OpenRouter. No paid provider searches were submitted.
 
