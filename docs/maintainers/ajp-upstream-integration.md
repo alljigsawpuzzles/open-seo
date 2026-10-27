@@ -10,7 +10,7 @@ Secret-free progress record for the self-hosted fork. Private operational detail
 | Fork `origin/main`                       | `ff093c2f` (matches v0.1.14 worktree)                                    |
 | Stale checkout (do not use for upgrades) | `/home/geoffajp/dev/open-seo` @ `3564a19f` (`codex/droplet-development`) |
 | Integration worktree                     | `/home/geoffajp/dev/open-seo-v0.1.19`                                    |
-| Integration branch                       | `codex/upgrade-openseo-v0.1.19` (see PR #22 tip)                           |
+| Integration branch                       | `codex/upgrade-openseo-v0.1.19` (see PR #22 tip)                         |
 | Draft PR                                 | https://github.com/alljigsawpuzzles/open-seo/pull/22                     |
 | Upstream target tag                      | `v0.1.19` → `99d9a49c`                                                   |
 | Upstream v0.1.14 tag                     | `8713d753` (merge-base with fork)                                        |

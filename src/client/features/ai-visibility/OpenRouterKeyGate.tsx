@@ -51,6 +51,7 @@ export function OpenRouterKeyGate({
         isRetrying={access.isRetrying}
       />
     );
+  if (access.status !== "setup") return <SkeletonPageContent />;
   return (
     <div className="grid min-h-[calc(100dvh-8rem)] place-items-center">
       <GateCard
