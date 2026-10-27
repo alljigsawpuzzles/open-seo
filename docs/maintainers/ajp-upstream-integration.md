@@ -46,14 +46,24 @@ Resolved eight conflict regions by combining upstream v0.1.16–v0.19 crawler/au
 5. **Rank check:** upstream changes may help retries/UI; Oct 20 cost/queue findings are not automatically fixed—re-read code, no new paid runs without approval.
 6. **PR tooling:** `gh` CLI not installed on droplet; push branch and open PR from GitHub UI or install `gh` when approved.
 
+## Validation (droplet, 2026-10-27)
+
+| Check                                | Result                                                                     |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| `pnpm ci:check`                      | Passed at `c5776f55` (oxlint needs ~6 GB Node heap on this machine)        |
+| Vitest                               | **1847** tests, **265** files                                              |
+| Selfhost build (`cloudflare_access`) | Passed                                                                     |
+| Wrangler dry-run                     | `open-seo-selfhost` (43 bindings), `open-seo-selfhost-audit` (18 bindings) |
+| Migration rehearsal                  | 0059–0062 on private SQLite copy; FK 0; 0055 skipped; ledger **62**        |
+
+Private logs: `/home/geoffajp/openseo-release-review/v0.1.19/` (not in git).
+
 ## Next steps
 
-1. Run `pnpm ci:check` and self-host `cloudflare_access` production build in `open-seo-v0.1.19` worktree.
-2. Targeted tests: audit crawl helpers, AI prompt research fallback, auth-mode self-host.
-3. Migration rehearsal on private backup (0060–0062 only).
-4. Push `codex/upgrade-openseo-v0.1.19` and open review PR.
-5. Draft rollout/rollback plan for Geoff approval before production deploy.
+1. Push `codex/upgrade-openseo-v0.1.19` and open review PR (body draft in `ajp-v0.1.19-pr-body.md`).
+2. Geoff approves `ajp-v0.1.19-rollout.md` before D1 apply or Worker activation.
+3. Fresh production export and live binding snapshot immediately before publication.
 
 ## Deployment state
 
-**Not live.** Integration branch under test on droplet only.
+**Not live.** Integration branch validated on droplet only.
