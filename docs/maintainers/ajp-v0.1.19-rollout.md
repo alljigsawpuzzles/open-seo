@@ -58,7 +58,7 @@ Rehearsed against a **fresh remote D1 export** (2026-10-27): 0060–0062 only; i
 6. **Build** from merged SHA with `AUTH_MODE=cloudflare_access` and production client env (same method as v0.1.14 validation).
 7. **Upload** inactive app + audit candidates; compare bindings/runtime to `openseo-deploy/backups/.../summary.json` and live API read.
 8. **Activate** both Workers together at 100% (matching pair).
-9. **Smoke:** Access on private routes; public `/about/`, `/privacy`, Google verification file; GSC/GA4; rank keywords; audit history; prompt research without OpenRouter (MCP/UI paths you use); paused AI tracking unchanged.
+9. **Smoke:** Access on private routes; public `/about/`, `/privacy`, Google verification file; GSC/GA4; rank keywords; audit history; **AI visibility / Prompt Research / Prompt Explorer without OpenRouter** (must not show OpenRouter gate — see `ajp-v0.1.19-compatibility.md`); paused AI tracking unchanged.
 10. **Restore** cron schedules exactly as recorded in step 2.
 
 ## Expected interruption
@@ -84,3 +84,9 @@ No auth mode change, secret rotation, or Shopify rule edits in this plan.
 
 - `pnpm ci:check`, Vitest **1847**, selfhost build, Wrangler dry-runs (see `ajp-upstream-integration.md`).
 - GitHub Actions CI **not run** on PR #22 — see integration doc (Actions disabled on repo).
+
+## Compatibility review (2026-10-27)
+
+Fork vs upstream `v0.1.19` for Shopify crawl, HTML/render fallback, rank-check UX/cost, and DataForSEO-only AI: **`docs/maintainers/ajp-v0.1.19-compatibility.md`**.
+
+**PR #22 addition:** `OpenRouterKeyGate` bypass when `generationAvailable === false` (restores staff DataForSEO-only workflows blocked by upstream v0.1.18). Local `pnpm dev` without Cloudflare Access env does not exercise the full UI; post-deploy smoke on the real self-host is required.

@@ -1,11 +1,15 @@
 import type { ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { GateCard } from "@/client/components/GateCard";
 import { QueryError } from "@/client/components/QueryState";
 import { SkeletonPageContent } from "@/client/components/SkeletonPresets";
 import { Button } from "@/client/components/ui/button";
+import { aiResearchSetupQueryOptions } from "@/client/features/ai-visibility/shared";
 import { useSamAccess } from "@/client/features/sam/useSamAccess";
+import { isHostedClientAuthMode } from "@/lib/auth-mode";
+import { bypassOpenRouterKeyGate } from "./openRouterKeyGateAccess";
 
 /**
  * AI visibility setup researches the brand and suggests prompts through
@@ -19,9 +23,25 @@ export function OpenRouterKeyGate({
   projectId: string;
   children: ReactNode;
 }) {
+  const hosted = isHostedClientAuthMode();
   const access = useSamAccess(projectId);
-  if (access.status === "ready") return children;
-  if (access.status === "checking") return <SkeletonPageContent />;
+  const setup = useQuery({
+    ...aiResearchSetupQueryOptions(projectId),
+    enabled: !hosted,
+    staleTime: 60_000,
+  });
+  if (
+    bypassOpenRouterKeyGate({
+      hosted,
+      openRouterConfigured: access.status === "ready",
+      generationAvailable: setup.data?.generationAvailable,
+    })
+  ) {
+    return children;
+  }
+  if (access.status === "checking" || (!hosted && setup.isPending)) {
+    return <SkeletonPageContent />;
+  }
   if (access.status === "error")
     return (
       <QueryError

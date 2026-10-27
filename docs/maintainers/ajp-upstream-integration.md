@@ -10,7 +10,7 @@ Secret-free progress record for the self-hosted fork. Private operational detail
 | Fork `origin/main`                       | `ff093c2f` (matches v0.1.14 worktree)                                    |
 | Stale checkout (do not use for upgrades) | `/home/geoffajp/dev/open-seo` @ `3564a19f` (`codex/droplet-development`) |
 | Integration worktree                     | `/home/geoffajp/dev/open-seo-v0.1.19`                                    |
-| Integration branch                       | `codex/upgrade-openseo-v0.1.19` @ `d5639a01` (pushed)                    |
+| Integration branch                       | `codex/upgrade-openseo-v0.1.19` (see PR #22 tip)                           |
 | Draft PR                                 | https://github.com/alljigsawpuzzles/open-seo/pull/22                     |
 | Upstream target tag                      | `v0.1.19` → `99d9a49c`                                                   |
 | Upstream v0.1.14 tag                     | `8713d753` (merge-base with fork)                                        |
@@ -41,19 +41,19 @@ Resolved eight conflict regions by combining upstream v0.1.16–v0.19 crawler/au
 ## Material risks (unchanged constraints)
 
 1. **Auth:** v0.1.17 adds password/standalone paths; production must stay `cloudflare_access` until an explicit product decision.
-2. **OpenRouter:** setup gate is stricter upstream; optional key still unlocks model filtering—fork fallback remains for prompt research without a key.
+2. **OpenRouter:** v0.1.18 gate blocked DataForSEO-only UI; PR adds **bypass** when `generationAvailable === false`. Server manual research + `aiPromptResearchFallback` retained from fork.
 3. **Migrations:** 0055 skip + non-contiguous ledger; plan 0060–0062 explicitly.
 4. **Shopify signature:** save/re-encrypt still open; do not rotate secrets during integration testing.
 5. **Rank check:** upstream changes may help retries/UI; Oct 20 cost/queue findings are not automatically fixed—re-read code, no new paid runs without approval.
 6. **GitHub CI:** Actions are **disabled** on `alljigsawpuzzles/open-seo` (workflow dispatch returns HTTP 422). PR #22 shows no checks because nothing runs—not because checks failed. Droplet validation is the current gate unless Actions is re-enabled.
-7. **AI visibility UI (v0.1.18):** `OpenRouterKeyGate` blocks `/ai-visibility` and `/prompt-explorer` until `OPENROUTER_API_KEY` is set. Server-side **manual** setup and **DataForSEO-only prompt research** remain; confirm this matches how staff use the product without a key.
+7. **AI visibility UI:** see `ajp-v0.1.19-compatibility.md` §4 and acceptance checklist. Gate bypass + Vitest added; production smoke without OpenRouter still required.
 
 ## Validation (droplet, 2026-10-27)
 
 | Check                                | Result                                                                     |
 | ------------------------------------ | -------------------------------------------------------------------------- |
 | `pnpm ci:check`                      | Passed at `c5776f55` (oxlint needs ~6 GB Node heap on this machine)        |
-| Vitest                               | **1847** tests, **265** files                                              |
+| Vitest                               | **1847+** (incl. `openRouterKeyGateAccess.test.ts` after gate fix)         |
 | Selfhost build (`cloudflare_access`) | Passed                                                                     |
 | Wrangler dry-run                     | `open-seo-selfhost` (43 bindings), `open-seo-selfhost-audit` (18 bindings) |
 | Migration rehearsal                  | 0059–0062 on private SQLite copy; FK 0; 0055 skipped; ledger **62**        |
