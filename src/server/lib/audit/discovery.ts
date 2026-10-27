@@ -58,10 +58,16 @@ async function fetchRobotsTxtText(
 ): Promise<string | null> {
   try {
     const fetchRobots = () =>
-      fetchFollowingRedirects(`${origin}/robots.txt`, 10_000, access, diagnostics, {
-        phase: "robots",
-        attempt: 1,
-      });
+      fetchFollowingRedirects(
+        `${origin}/robots.txt`,
+        10_000,
+        access,
+        diagnostics,
+        {
+          phase: "robots",
+          attempt: 1,
+        },
+      );
     let fetched = await fetchRobots();
     if (
       fetched?.response.status === 429 &&

@@ -123,22 +123,25 @@ export async function crawlPage(
         if (challenged || throttled) statusCode = page.status ?? 200;
         // The renderer can be challenged where the direct fetch was not.
         fetchClass = classifyFetch(statusCode, false, body.slice(0, 4_000));
-      } catch (error) {
-        // Preserve readable initial HTML when optional rendering fails.
-        // A challenge is never usable content and must remain blocked.
-        if (!challenged && !throttled) throw error;
-        renderingFailed = true;
-        logCrawlFailure({
-          auditId,
-          url,
-          statusCode,
-          signatureAttached,
-          retryAfter,
-          redirectOutcome: "not_followed",
-          errorCategory: "render_failed",
-        });
-        if (throttled) {
-          await throttle.refuse(url, response.headers.get("retry-after"));
+      } catch {
+        if (challenged || throttled) {
+          // A challenge that neither renderer passed stays blocked; a
+          // throttled page neither renderer read is given up as rate limited.
+          if (throttled) {
+            await throttle.refuse(url, response.headers.get("retry-after"));
+          }
+        } else {
+          // Preserve readable initial HTML when optional rendering fails.
+          renderingFailed = true;
+          logCrawlFailure({
+            auditId,
+            url,
+            statusCode,
+            signatureAttached,
+            retryAfter,
+            redirectOutcome: "not_followed",
+            errorCategory: "render_failed",
+          });
         }
       }
     }

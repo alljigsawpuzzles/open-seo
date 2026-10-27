@@ -20,6 +20,7 @@ import {
 import { AppError } from "@/server/lib/errors";
 import {
   buildChatAgentModel,
+  requireOpenRouterAccess,
   type OpenRouterAccess,
 } from "@/server/lib/openrouter";
 import { buildCacheKey, getCached, setCached } from "@/server/lib/r2-cache";
@@ -102,9 +103,11 @@ export async function researchAiPrompts(
     );
   const optionalKey = await getOptionalEnvValue("OPENROUTER_API_KEY");
   const manualResearch = !optionalKey && !(await isHostedServerAuthMode());
-  const openRouterApiKey = manualResearch
+  const openRouter: OpenRouterAccess | null = manualResearch
     ? null
-    : (optionalKey ?? (await getRequiredEnvValue("OPENROUTER_API_KEY")));
+    : optionalKey
+      ? { apiKey: optionalKey }
+      : await requireOpenRouterAccess();
   const state = await getTracker({ projectId: input.projectId });
   const keyword = normalizeAiSuggestion(input.keyword);
   // DataForSEO has ChatGPT prompt data only in US English.
@@ -123,13 +126,13 @@ export async function researchAiPrompts(
       .filter((prompt) => !prompt.archived)
       .map((prompt) => normalizeAiSuggestion(prompt.text)),
   );
-  const relevant = openRouterApiKey
+  const relevant = openRouter
     ? await relevantQuestions(
         {
           projectId: input.projectId,
           keyword,
           prompts: loaded.prompts,
-          openRouterApiKey,
+          openRouter,
         },
         customer,
       )

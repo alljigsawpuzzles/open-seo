@@ -76,7 +76,7 @@ describe("crawlPage", () => {
     expect(page?.rateLimited).toBe(true);
   });
 
-    it("reports every crawl attempt to bounded audit diagnostics", async () => {
+  it("reports every crawl attempt to bounded audit diagnostics", async () => {
     vi.useFakeTimers();
     stubFetch({ status: 429, retryAfter: "5" }, { status: 200 });
     const diagnostics = { record: vi.fn() };
@@ -163,7 +163,7 @@ describe("crawlPage", () => {
     await vi.advanceTimersByTimeAsync(30_000);
     const page = await crawled;
 
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(page?.fetchClass).toBe("rate_limited");
   });
 

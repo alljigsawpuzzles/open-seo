@@ -1,0 +1,59 @@
+# AJP upstream integration status
+
+Secret-free progress record for the self-hosted fork. Private operational detail stays under `/home/geoffajp/openseo-handover/`.
+
+## Verified baseline (2026-10-27)
+
+| Item                                     | Value                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------ |
+| Last deployed integration                | **v0.1.14** (PR #21), merge `ff093c2f`                                   |
+| Fork `origin/main`                       | `ff093c2f` (matches v0.1.14 worktree)                                    |
+| Stale checkout (do not use for upgrades) | `/home/geoffajp/dev/open-seo` @ `3564a19f` (`codex/droplet-development`) |
+| Integration worktree                     | `/home/geoffajp/dev/open-seo-v0.1.19`                                    |
+| Integration branch                       | `codex/upgrade-openseo-v0.1.19` (from `origin/main`)                     |
+| Upstream target tag                      | `v0.1.19` → `99d9a49c`                                                   |
+| Upstream v0.1.14 tag                     | `8713d753` (merge-base with fork)                                        |
+| Commits upstream v0.1.14…v0.1.19         | 60 on linear release ancestry                                            |
+
+## Release scope (verified tags)
+
+| Release | Tag SHA    | Notes for AJP fork                                                                                  |
+| ------- | ---------- | --------------------------------------------------------------------------------------------------- |
+| v0.1.15 | `0ca244b0` | MCP OAuth/org binding, rank recheck for never-ranked keywords, MCP sign-in refresh                  |
+| v0.1.16 | `236761ad` | **Shopify crawl continues past refused URLs**; dashboard scan without renderer; workflow resilience |
+| v0.1.17 | `307c9ec6` | **AUTH_MODE=password**, standalone Docker, team/org schema (keep **cloudflare_access** in prod)     |
+| v0.1.18 | `89ad06cf` | **OpenRouter gate** for AI visibility setup; Every App auth mode (not used on AJP)                  |
+| v0.1.19 | `99d9a49c` | Rendered-audit **>1k pages within one credit hold**; MCP rank keyword volume                        |
+
+## New migrations after production (post–v0.1.14)
+
+SQLite journal adds **0060**, **0061**, **0062** (Postgres **0038–0040**). **0055 remains intentionally skipped** on AJP production; do not run generic `migrate` without an explicit allowlist. Rehearse 0060–0062 on a private restored backup before any prod apply.
+
+## Merge conflict resolution (fork-specific)
+
+Resolved eight conflict regions by combining upstream v0.1.16–v0.19 crawler/auth improvements with fork behavior:
+
+- **Crawler:** `auditRequestHeaders` / `publicFetch`, upstream rate-limit pacing and Shopify `refuse`, plus fork fetch diagnostics and render HTML fallback.
+- **AI prompt research:** retained DataForSEO-only path when `OPENROUTER_API_KEY` is unset on self-host.
+- **Workflow:** both `renderHold` (metered rendered audits) and per-audit `diagnostics`.
+
+## Material risks (unchanged constraints)
+
+1. **Auth:** v0.1.17 adds password/standalone paths; production must stay `cloudflare_access` until an explicit product decision.
+2. **OpenRouter:** setup gate is stricter upstream; optional key still unlocks model filtering—fork fallback remains for prompt research without a key.
+3. **Migrations:** 0055 skip + non-contiguous ledger; plan 0060–0062 explicitly.
+4. **Shopify signature:** save/re-encrypt still open; do not rotate secrets during integration testing.
+5. **Rank check:** upstream changes may help retries/UI; Oct 20 cost/queue findings are not automatically fixed—re-read code, no new paid runs without approval.
+6. **PR tooling:** `gh` CLI not installed on droplet; push branch and open PR from GitHub UI or install `gh` when approved.
+
+## Next steps
+
+1. Run `pnpm ci:check` and self-host `cloudflare_access` production build in `open-seo-v0.1.19` worktree.
+2. Targeted tests: audit crawl helpers, AI prompt research fallback, auth-mode self-host.
+3. Migration rehearsal on private backup (0060–0062 only).
+4. Push `codex/upgrade-openseo-v0.1.19` and open review PR.
+5. Draft rollout/rollback plan for Geoff approval before production deploy.
+
+## Deployment state
+
+**Not live.** Integration branch under test on droplet only.
