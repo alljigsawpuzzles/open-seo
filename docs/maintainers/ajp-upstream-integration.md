@@ -45,7 +45,8 @@ Resolved eight conflict regions by combining upstream v0.1.16–v0.19 crawler/au
 3. **Migrations:** 0055 skip + non-contiguous ledger; plan 0060–0062 explicitly.
 4. **Shopify signature:** save/re-encrypt still open; do not rotate secrets during integration testing.
 5. **Rank check:** upstream changes may help retries/UI; Oct 20 cost/queue findings are not automatically fixed—re-read code, no new paid runs without approval.
-6. **PR tooling:** `gh` CLI not installed on droplet; push branch and open PR from GitHub UI or install `gh` when approved.
+6. **GitHub CI:** Actions are **disabled** on `alljigsawpuzzles/open-seo` (workflow dispatch returns HTTP 422). PR #22 shows no checks because nothing runs—not because checks failed. Droplet validation is the current gate unless Actions is re-enabled.
+7. **AI visibility UI (v0.1.18):** `OpenRouterKeyGate` blocks `/ai-visibility` and `/prompt-explorer` until `OPENROUTER_API_KEY` is set. Server-side **manual** setup and **DataForSEO-only prompt research** remain; confirm this matches how staff use the product without a key.
 
 ## Validation (droplet, 2026-10-27)
 
