@@ -10,7 +10,8 @@ Secret-free progress record for the self-hosted fork. Private operational detail
 | Fork `origin/main`                       | `ff093c2f` (matches v0.1.14 worktree)                                    |
 | Stale checkout (do not use for upgrades) | `/home/geoffajp/dev/open-seo` @ `3564a19f` (`codex/droplet-development`) |
 | Integration worktree                     | `/home/geoffajp/dev/open-seo-v0.1.19`                                    |
-| Integration branch                       | `codex/upgrade-openseo-v0.1.19` (from `origin/main`)                     |
+| Integration branch                       | `codex/upgrade-openseo-v0.1.19` @ `d5639a01` (pushed)                    |
+| Draft PR                                 | https://github.com/alljigsawpuzzles/open-seo/pull/22                     |
 | Upstream target tag                      | `v0.1.19` → `99d9a49c`                                                   |
 | Upstream v0.1.14 tag                     | `8713d753` (merge-base with fork)                                        |
 | Commits upstream v0.1.14…v0.1.19         | 60 on linear release ancestry                                            |
@@ -60,7 +61,7 @@ Private logs: `/home/geoffajp/openseo-release-review/v0.1.19/` (not in git).
 
 ## Next steps
 
-1. Push `codex/upgrade-openseo-v0.1.19` and open review PR (body draft in `ajp-v0.1.19-pr-body.md`).
+1. Review draft PR #22; wait for GitHub CI where applicable.
 2. Geoff approves `ajp-v0.1.19-rollout.md` before D1 apply or Worker activation.
 3. Fresh production export and live binding snapshot immediately before publication.
 
