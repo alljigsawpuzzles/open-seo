@@ -1,7 +1,10 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { NavTab, NavTabs } from "@/client/components/NavTabs";
 import { PageHeader } from "@/client/components/PageHeader";
-import { usesBetterAuthClient } from "@/lib/auth-mode";
+import {
+  isHostedClientAuthMode,
+  usesBetterAuthClient,
+} from "@/lib/auth-mode";
 
 export const Route = createFileRoute("/_app/settings")({
   component: SettingsLayout,
@@ -17,6 +20,9 @@ function SettingsLayout() {
     // would 404.
     ...(usesBetterAuthClient()
       ? [{ to: "/settings/organization" as const, label: "Organization" }]
+      : []),
+    ...(!isHostedClientAuthMode()
+      ? [{ to: "/settings/changelog" as const, label: "Changelog" }]
       : []),
   ];
 

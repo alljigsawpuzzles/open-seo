@@ -42,6 +42,7 @@ import { Route as AppHelpDataforseoApiKeyRouteImport } from './routes/_app/help/
 import { Route as AppHelpOpenrouterApiKeyRouteImport } from './routes/_app/help/openrouter-api-key'
 import { Route as AppPProjectIdRouteRouteImport } from './routes/_app/p/$projectId/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
+import { Route as AppSettingsChangelogRouteImport } from './routes/_app/settings/changelog'
 import { Route as AppSettingsOrganizationRouteImport } from './routes/_app/settings/organization'
 import { Route as AuthenticatedOnboardingIndexRouteImport } from './routes/_authenticated.onboarding.index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -248,6 +249,11 @@ const AppPProjectIdRouteRoute = AppPProjectIdRouteRouteImport.update({
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
+const AppSettingsChangelogRoute = AppSettingsChangelogRouteImport.update({
+  id: '/changelog',
+  path: '/changelog',
   getParentRoute: () => AppSettingsRoute,
 } as any)
 const AppSettingsOrganizationRoute = AppSettingsOrganizationRouteImport.update({
@@ -507,6 +513,7 @@ export interface FileRoutesByFullPath {
   '/billing/fix-payment': typeof AppBillingFixPaymentRoute
   '/help/dataforseo-api-key': typeof AppHelpDataforseoApiKeyRoute
   '/help/openrouter-api-key': typeof AppHelpOpenrouterApiKeyRoute
+  '/settings/changelog': typeof AppSettingsChangelogRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/autumn/$': typeof ApiAutumnSplatRoute
@@ -578,6 +585,7 @@ export interface FileRoutesByTo {
   '/billing/fix-payment': typeof AppBillingFixPaymentRoute
   '/help/dataforseo-api-key': typeof AppHelpDataforseoApiKeyRoute
   '/help/openrouter-api-key': typeof AppHelpOpenrouterApiKeyRoute
+  '/settings/changelog': typeof AppSettingsChangelogRoute
   '/settings/organization': typeof AppSettingsOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/autumn/$': typeof ApiAutumnSplatRoute
@@ -651,6 +659,7 @@ export interface FileRoutesById {
   '/_app/billing_/fix-payment': typeof AppBillingFixPaymentRoute
   '/_app/help/dataforseo-api-key': typeof AppHelpDataforseoApiKeyRoute
   '/_app/help/openrouter-api-key': typeof AppHelpOpenrouterApiKeyRoute
+  '/_app/settings/changelog': typeof AppSettingsChangelogRoute
   '/_app/settings/organization': typeof AppSettingsOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/autumn/$': typeof ApiAutumnSplatRoute
@@ -726,6 +735,7 @@ export interface FileRouteTypes {
     | '/billing/fix-payment'
     | '/help/dataforseo-api-key'
     | '/help/openrouter-api-key'
+    | '/settings/changelog'
     | '/settings/organization'
     | '/api/auth/$'
     | '/api/autumn/$'
@@ -797,6 +807,7 @@ export interface FileRouteTypes {
     | '/billing/fix-payment'
     | '/help/dataforseo-api-key'
     | '/help/openrouter-api-key'
+    | '/settings/changelog'
     | '/settings/organization'
     | '/api/auth/$'
     | '/api/autumn/$'
@@ -869,6 +880,7 @@ export interface FileRouteTypes {
     | '/_app/billing_/fix-payment'
     | '/_app/help/dataforseo-api-key'
     | '/_app/help/openrouter-api-key'
+    | '/_app/settings/changelog'
     | '/_app/settings/organization'
     | '/api/auth/$'
     | '/api/autumn/$'
@@ -1175,6 +1187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsIndexRouteImport
       parentRoute: typeof AppSettingsRoute
     }
+    '/_app/settings/changelog': {
+      id: '/_app/settings/changelog'
+      path: '/changelog'
+      fullPath: '/settings/changelog'
+      preLoaderRoute: typeof AppSettingsChangelogRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/settings/organization': {
       id: '/_app/settings/organization'
       path: '/organization'
@@ -1466,11 +1485,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppSettingsRouteChildren {
+  AppSettingsChangelogRoute: typeof AppSettingsChangelogRoute
   AppSettingsOrganizationRoute: typeof AppSettingsOrganizationRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
 }
 
 const AppSettingsRouteChildren: AppSettingsRouteChildren = {
+  AppSettingsChangelogRoute: AppSettingsChangelogRoute,
   AppSettingsOrganizationRoute: AppSettingsOrganizationRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
 }

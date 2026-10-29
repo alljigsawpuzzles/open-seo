@@ -6,15 +6,16 @@ Secret-free progress record for the self-hosted fork. Private operational detail
 
 | Item                                     | Value                                                                    |
 | ---------------------------------------- | ------------------------------------------------------------------------ |
-| Last deployed integration                | **v0.1.14** (PR #21), merge `ff093c2f`                                   |
-| Fork `origin/main`                       | `ff093c2f` (matches v0.1.14 worktree)                                    |
+| **Last deployed integration**            | **v0.1.19** (PR #22), merge **`08390467`**                               |
+| Previous production                      | v0.1.14 (PR #21), `ff093c2f`                                             |
+| Fork `origin/main`                       | **`083904674f8b17fa5b2662ffe507c8b39e73eca9`**                           |
 | Stale checkout (do not use for upgrades) | `/home/geoffajp/dev/open-seo` @ `3564a19f` (`codex/droplet-development`) |
-| Integration worktree                     | `/home/geoffajp/dev/open-seo-v0.1.19`                                    |
-| Integration branch                       | `codex/upgrade-openseo-v0.1.19` @ **`b58deab3`** (PR #22)                |
-| Draft PR                                 | https://github.com/alljigsawpuzzles/open-seo/pull/22                     |
-| Upstream target tag                      | `v0.1.19` → `99d9a49c`                                                   |
+| Integration worktree                     | `/home/geoffajp/dev/open-seo-v0.1.19` @ merge commit                     |
+| Merged PR                                | https://github.com/alljigsawpuzzles/open-seo/pull/22                     |
+| Upstream integrated tag                  | `v0.1.19` → `99d9a49c`                                                   |
 | Upstream v0.1.14 tag                     | `8713d753` (merge-base with fork)                                        |
 | Commits upstream v0.1.14…v0.1.19         | 60 on linear release ancestry                                            |
+| Production smoke (operator)              | Pass 2026-10-27 — see `ajp-v0.1.19-rollout.md` deployment record       |
 
 ## Release scope (verified tags)
 
@@ -67,10 +68,10 @@ Preview-only env (not used for build): `/home/geoffajp/openseo-handover/2026-10-
 
 ## Next steps
 
-1. Review draft PR #22; wait for GitHub CI where applicable.
-2. Geoff approves `ajp-v0.1.19-rollout.md` before D1 apply or Worker activation.
-3. Fresh production export and live binding snapshot immediately before publication.
+1. Monitor production; use rollback pointers in `ajp-v0.1.19-rollout.md` if needed.
+2. Schedule work on **Shopify signature** reliability and **rank-check** UX/cost follow-ups (separate from v0.1.19 ship).
+3. Optional: exercise new schema-backed features (local rank, signup campaigns) when product-ready — migrations **0060–0062** are live.
 
 ## Deployment state
 
-**Not live.** Integration branch validated on droplet only.
+**Live** on Cloudflare @ merge `08390467` (2026-10-27). Private publication bundle and operator notes under `openseo-handover/2026-10-27/DEPLOYMENT-v0.1.19.md`.

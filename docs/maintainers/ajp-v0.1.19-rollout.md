@@ -1,24 +1,54 @@
 # AJP v0.1.19 rollout and rollback
 
-Maintainer approval required before production changes. This document is the publication plan; it is not a deployment record.
+Publication plan and **deployment record** for the v0.1.19 integration (PR #22).
 
 ## Merge commit
 
-- **PR:** https://github.com/alljigsawpuzzles/open-seo/pull/22 (draft)
-- **Proposed merge commit:** **`b58deab3574c1eea981be80ce5ce13b6a02b9f40`** (PR #22 tip after droplet `ci:check` + dry-runs)
-- **Build validated on droplet at:** `b58deab3` — `release-build-validation.json` (2026-10-27)
+- **PR:** https://github.com/alljigsawpuzzles/open-seo/pull/22 (**merged** 2026-10-27)
+- **Merge commit:** **`083904674f8b17fa5b2662ffe507c8b39e73eca9`**
+- **Build validated on droplet at:** `b58deab3` / merge SHA — `release-build-validation.json` (2026-10-27)
 
-## Live production state (read 2026-10-27, no writes)
+## Deployment record (2026-10-27)
+
+| Item | Value |
+| ---- | ----- |
+| Publication artifact (private) | `/home/geoffajp/openseo-release-review/v0.1.19-publication-2026-10-27T12-06-37-641Z` |
+| Handover summary | `/home/geoffajp/openseo-handover/2026-10-27/DEPLOYMENT-v0.1.19.md` |
+| D1 `d1_migrations` rows | **62** |
+| Latest applied | `0062_bind_api_keys_to_organization.sql` (ledger id `00063`) |
+| **0055** | **Not** in ledger (deliberately skipped) |
+| App Worker @ 100% | `5a156ab3-4966-45fa-9833-71cb096d3687` |
+| Audit Worker @ 100% | `62a59c17-1f7f-4fbf-b68b-cd5a9da8953e` |
+| `AUTH_MODE` | `cloudflare_access` |
+| App cron schedules | `17 3 * * *`, `*/5 * * * *` (restored after cutover) |
+
+### Smoke results
+
+| Check | Result |
+| ----- | ------ |
+| Workflows idle / nonterminal audits at cutover | Pass |
+| Pre-migrate backup export + restore verify | Pass |
+| Migrations 0060–62 only; row counts unchanged | Pass |
+| Unauthenticated protected routes | 401 |
+| Public `/about/`, `/privacy` | 200 |
+| **Authenticated Access + existing-data screens** (operator Geoff, 2026-10-27) | **Pass — no errors reported** (GSC/GA4, rank history, audit history, AI staff paths without OpenRouter gate, paused AI tracking unchanged) |
+
+No paid provider jobs were run during publication or operator smoke.
+
+### Unresolved follow-ups (separate from this release)
+
+- **Shopify signature** save/reliability and signed-crawl root cause — see `ajp-v0.1.19-compatibility.md` §1.
+- **Rank check** progress-at-100%-during-retries, self-host cost estimate, alert banners — see Oct 2026 `FINDINGS.md`; not fixed by v0.1.15–19 alone.
+
+## Pre-deploy baseline (2026-10-27 morning)
 
 | Item                       | Value                                                                     |
 | -------------------------- | ------------------------------------------------------------------------- |
 | D1 `d1_migrations` rows    | **59**                                                                    |
 | Latest applied             | `0059_thankful_aaron_stack.sql` (ledger id `00060`)                       |
 | **0055**                   | **Not** in ledger (gap at id `00056`; 0055 deliberately skipped)          |
-| App Worker @ 100%          | `f4575d03-0bcc-4f2b-85e6-839e9be847ec` (annotation: v0.1.14 / `ff093c2f`) |
+| App Worker @ 100%          | `f4575d03-0bcc-4f2b-85e6-839e9be847ec` (v0.1.14 / `ff093c2f`)           |
 | Audit Worker @ 100%        | `cbe1faa7-9c3c-4c41-8956-2c7dd8db7056`                                    |
-| `AUTH_MODE` (live binding) | `cloudflare_access`                                                       |
-| App cron schedules         | `17 3 * * *`, `*/5 * * * *` (record before pause)                         |
 
 ## Migration delta (only)
 

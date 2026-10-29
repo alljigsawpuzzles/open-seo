@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ApiKeySettings } from "@/client/features/settings/ApiKeySettings";
 import { SectionHeader } from "@/client/components/PageHeader";
@@ -44,11 +44,25 @@ function PersonalSettings() {
         <section className="space-y-3">
           <SectionHeader title="About" />
           <div className="flex items-center justify-between gap-6">
-            <span className="text-sm">Version</span>
+            <span className="text-sm">Integrated OpenSEO release</span>
             <span className="font-mono text-sm text-muted-foreground">
               v{version}
             </span>
           </div>
+          <p className="text-sm text-muted-foreground">
+            This number comes from{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              package.json
+            </code>{" "}
+            after we merge an upstream OpenSEO version. AJP-specific changes are
+            listed in the changelog.
+          </p>
+          <Link
+            to="/settings/changelog"
+            className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            View changelog →
+          </Link>
         </section>
       )}
     </div>
