@@ -15,4 +15,8 @@ Copy structure from `docs/maintainers/ajp-local-handoff.example.md` when creatin
 Read .local/ajp-active-work.md if present, then AGENTS.md. Goal: …
 ```
 
+**Automatic update:** with Cursor **Hooks** enabled, `.cursor/hooks.json` runs `handoff-on-stop.sh` when an Agent turn finishes—it requests one follow-up turn to update this file unless it was modified in the last 3 minutes.
+
+**Enable hooks (Cursor 2.x):** open the sidebar **Customize** page → **Hooks** tab (not the old Settings search). You should see the project hook from `.cursor/hooks.json`. Debug via **View → Output** → channel **Hooks**. Reload the window if the tab is empty after merge.
+
 Also `@` a recent chat when you need verbatim recall of one thread.

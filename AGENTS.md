@@ -54,7 +54,7 @@ OpenSEO also runs behind an Every App Gateway (`AUTH_MODE=everyapp`; how it work
 - `docs/` (except `docs/maintainers/`) and `web/content/docs/` are public, user-facing documentation. Write only material that helps users understand, use, or self-host the product.
 - Do not put internal working notes, content briefs, drafts, asset-sourcing notes, implementation logs, or agent handoffs in those directories.
 - Use `docs/maintainers/` for engineering decisions, development workflows, and maintenance notes that should be shared and versioned. This directory is tracked in Git but is not part of the user-facing documentation site. Create notes only when requested or useful for future maintenance; never include secrets.
-- **AJP fork (local only):** continuity across Cursor/Codex chats lives in **`.local/ajp-active-work.md`** (gitignored). See `docs/maintainers/ajp-local-handoff.example.md` and `.local/README.md`. Agents should read it when present and append a dated session entry before finishing.
+- **AJP fork (local only):** continuity across Cursor/Codex chats lives in **`.local/ajp-active-work.md`** (gitignored). See `docs/maintainers/ajp-local-handoff.example.md` and `.local/README.md`. Agents should read it when present and append a dated session entry before finishing. With Cursor Hooks enabled, **`.cursor/hooks.json`** nudges a handoff update on Agent **stop** when the file was not recently edited.
 - Write PR descriptions in the `simple-issue-description` format, with no validation logs or per-file changelog. Continue using the dedicated papercut log for repository friction.
 
 ## Log papercuts
