@@ -15,7 +15,7 @@ Secret-free progress record for the self-hosted fork. Private operational detail
 | Upstream integrated tag                  | `v0.1.19` → `99d9a49c`                                                   |
 | Upstream v0.1.14 tag                     | `8713d753` (merge-base with fork)                                        |
 | Commits upstream v0.1.14…v0.1.19         | 60 on linear release ancestry                                            |
-| Production smoke (operator)              | Pass 2026-10-27 — see `ajp-v0.1.19-rollout.md` deployment record       |
+| Production smoke (operator)              | Pass 2026-10-27 — see `ajp-v0.1.19-rollout.md` deployment record         |
 
 ## Release scope (verified tags)
 
@@ -26,6 +26,7 @@ Secret-free progress record for the self-hosted fork. Private operational detail
 | v0.1.17 | `307c9ec6` | **AUTH_MODE=password**, standalone Docker, team/org schema (keep **cloudflare_access** in prod)     |
 | v0.1.18 | `89ad06cf` | **OpenRouter gate** for AI visibility setup; Every App auth mode (not used on AJP)                  |
 | v0.1.19 | `99d9a49c` | Rendered-audit **>1k pages within one credit hold**; MCP rank keyword volume                        |
+| v0.1.20 | `f24a8334` | Colorblind charts; AI visibility late-answer + MCP routing fixes; rank “double-checking” copy       |
 
 ## New migrations after production (post–v0.1.14)
 
@@ -58,9 +59,9 @@ Resolved eight conflict regions by combining upstream v0.1.16–v0.19 crawler/au
 | `pnpm ci:check`                      | **Passed** @ `b58deab3` (`NODE_OPTIONS='--max-old-space-size=6144'`)                        |
 | Vitest                               | **1852** @ `29c83fb4` (not part of `ci:check`; rerun optional before deploy)                |
 | Selfhost build (`cloudflare_access`) | **Passed** @ `b58deab3` via `prepare-v19-build.mjs` (no `.env.local`; prod `AUTH_MODE` env) |
-| Wrangler dry-run                     | **Passed** — app **43** bindings, audit **18** (see `release-build-validation.json`)          |
+| Wrangler dry-run                     | **Passed** — app **43** bindings, audit **18** (see `release-build-validation.json`)        |
 | Auth bake-in                         | Client references `cloudflare_access`; `local_noauth` only in shared auth-mode enum strings |
-| Migration rehearsal                  | **0060–0062** on live export copy; **0055** excluded (ledger rehearsal unchanged)            |
+| Migration rehearsal                  | **0060–0062** on live export copy; **0055** excluded (ledger rehearsal unchanged)           |
 
 Private artifact: `/home/geoffajp/openseo-release-review/v0.1.19/release-build-validation.json`
 

@@ -6,13 +6,13 @@ Staff see **Settings → Deployment log** (`/settings/changelog`) on self-host b
 
 Edit **`src/shared/ajp-deployment-changelog.ts`** when you deploy or merge upstream.
 
-| Field | Meaning |
-| ----- | ------- |
-| `version` | Must match `package.json` after the deploy |
+| Field               | Meaning                                                                                                    |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `version`           | Must match `package.json` after the deploy                                                                 |
 | `upstream.sections` | Summaries from [every-app/open-seo releases](https://github.com/every-app/open-seo/releases) we integrated |
-| `forkChanges` | Anything AJP-specific (auth, migrations skipped, gate bypass, crawler, public pages, ops) |
-| `operations` | D1 allowlist, Worker pairs, schedules — no secrets |
-| `openFollowUps` | Known issues **not** fixed by this deploy (keep separate from release bullets) |
+| `forkChanges`       | Anything AJP-specific (auth, migrations skipped, gate bypass, crawler, public pages, ops)                  |
+| `operations`        | D1 allowlist, Worker pairs, schedules — no secrets                                                         |
+| `openFollowUps`     | Known issues **not** fixed by this deploy (keep separate from release bullets)                             |
 
 The **Personal → About** version label reads `package.json` only. That is the upstream OpenSEO semver we integrated, not a fork-only number.
 

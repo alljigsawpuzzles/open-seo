@@ -37,6 +37,44 @@ export const AJP_DEPLOYMENT_CHANGELOG_INTRO = {
 /** Newest first. */
 export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
   {
+    version: "0.1.20",
+    deployedOn: "2026-10-29",
+    pullRequest: {
+      number: 24,
+      url: "https://github.com/alljigsawpuzzles/open-seo/pull/24",
+    },
+    upstream: {
+      label: "OpenSEO v0.1.20",
+      compareUrl:
+        "https://github.com/every-app/open-seo/compare/v0.1.19...v0.1.20",
+      sections: [
+        {
+          title: "What's new",
+          items: ["Charts use colorblind-friendly colours."],
+        },
+        {
+          title: "Fixed",
+          items: [
+            "MCP sign-in on the new Docker self-host layout.",
+            "Gemini answers in Prompt Explorer.",
+            "Late AI visibility answers attach to their scheduled run.",
+            "MCP AI visibility setup opens the tracker instead of repeating setup.",
+            "Rank checks show “double-checking results” at the end instead of looking stuck.",
+          ],
+        },
+      ],
+    },
+    forkChanges: [
+      "Merged MCP tracker-ready Prompt Research behaviour with existing manual/DataForSEO-only self-host setup (no OpenRouter required).",
+      "Cloudflare Access production auth unchanged; OpenRouter gate bypass and crawler/AI fork paths retained.",
+    ],
+    operations: ["Worker pair deploy only — no new D1 migrations after 0062."],
+    openFollowUps: [
+      "Shopify crawler signature save/reliability.",
+      "Rank check cost estimate and alert accuracy (progress copy improved upstream).",
+    ],
+  },
+  {
     version: "0.1.19",
     deployedOn: "2026-10-27",
     pullRequest: {
