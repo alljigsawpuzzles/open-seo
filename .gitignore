@@ -41,6 +41,10 @@ dist/
 !.claude/skills/
 !.claude/CLAUDE.md
 
+# AJP private continuity (local only — never commit)
+.local/ajp-active-work.md
+.local/session-log.md
+
 # Alchemy local state + bundle artifacts (SaaS deploys)
 .alchemy/
 

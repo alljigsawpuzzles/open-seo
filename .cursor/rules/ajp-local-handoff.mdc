@@ -1,0 +1,10 @@
+---
+description: Load gitignored AJP continuity log at session start; update before ending
+alwaysApply: true
+---
+
+For the alljigsawpuzzles/open-seo fork on this machine:
+
+1. If `.local/ajp-active-work.md` exists, read it at the start of planning or multi-step work and treat it as authoritative continuity across chats (releases shipped, branches, decisions, follow-ups).
+2. Before finishing a session that changed plans, deploy state, or priorities, append or update a **Session log** section in that file (date, what was discussed, what was done, next step). Do not copy secrets into the file.
+3. Public repo changelog: `src/shared/ajp-deployment-changelog.ts` is for staff UI; keep `.local/` for private ops detail that must not be committed.
