@@ -39,6 +39,10 @@ export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
   {
     version: "0.1.20",
     deployedOn: "2026-10-29",
+    pullRequest: {
+      number: 24,
+      url: "https://github.com/alljigsawpuzzles/open-seo/pull/24",
+    },
     upstream: {
       label: "OpenSEO v0.1.20",
       compareUrl:
