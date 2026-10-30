@@ -6,6 +6,7 @@ import { account } from "@/db/schema";
 import { getAuth } from "@/lib/auth";
 import { resolveUserContextFromHeaders } from "@/middleware/ensure-user/resolve";
 import { AppError } from "@/server/lib/errors";
+import { GoogleTokenError } from "@/server/lib/googleTokenErrors";
 import { responseForAppError } from "@/server/lib/http-errors";
 import { getPublicOrigin } from "@/server/mcp/public-origin";
 import {
@@ -184,7 +185,24 @@ async function fetchTokens(params: Record<string, string>) {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams(params),
   });
-  if (!response.ok) return null;
+  if (!response.ok) {
+    if (params.grant_type !== "refresh_token") return null;
+    const body: unknown = await response.json().catch(() => null);
+    const parsed = z
+      .object({
+        error: z.enum([
+          "invalid_grant",
+          "invalid_client",
+          "unauthorized_client",
+          "temporarily_unavailable",
+        ]),
+      })
+      .safeParse(body);
+    throw new GoogleTokenError(
+      parsed.success ? parsed.data.error : "unknown_error",
+      response.status,
+    );
+  }
   return googleTokenResponseSchema.parse(await response.json());
 }
 
@@ -356,7 +374,7 @@ export async function getGoogleAccessToken(input: {
       ),
     )
     .limit(1);
-  if (!grant) throw new Error(`No ${input.providerId} grant for this user.`);
+  if (!grant) throw new GoogleTokenError("grant_missing");
   const { encrypt, decrypt } = await tokenCrypto();
   const expiresAt = grant.accessTokenExpiresAt?.getTime();
   const fresh =
@@ -367,9 +385,7 @@ export async function getGoogleAccessToken(input: {
     // without one cannot recover once its access token expires. Failing here
     // lets the GSC/GA4 clients ask for a reconnect instead of sending a dead
     // token to Google.
-    throw new Error(
-      `The ${input.providerId} grant has expired and cannot be refreshed.`,
-    );
+    throw new GoogleTokenError("refresh_token_missing");
   }
   const config = await getGoogleOAuthClientConfig();
   if (!config) {
@@ -385,7 +401,7 @@ export async function getGoogleAccessToken(input: {
     grant_type: "refresh_token",
   });
   if (!tokens) {
-    throw new Error(`Google refused to refresh the ${input.providerId} grant.`);
+    throw new GoogleTokenError("unknown_error");
   }
   await db
     .update(account)
