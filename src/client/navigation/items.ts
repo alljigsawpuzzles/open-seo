@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   FileText,
   Globe,
+  Bell,
   LayoutDashboard,
   Link2,
   MessageSquare,
@@ -38,6 +39,11 @@ const projectNavItems = [
     to: "/p/$projectId/rank-tracking" as const,
     label: "Rank Tracking",
     icon: TrendingUp,
+  },
+  {
+    to: "/p/$projectId/notifications" as const,
+    label: "Notifications",
+    icon: Bell,
   },
   {
     to: "/p/$projectId/search-performance" as const,
@@ -145,6 +151,7 @@ export function getProjectNavGroups(projectId: string) {
       items: [
         byPath("/p/$projectId/search-performance"),
         byPath("/p/$projectId/rank-tracking"),
+        byPath("/p/$projectId/notifications"),
         byPath("/p/$projectId/saved"),
         byPath("/p/$projectId/audit"),
       ],

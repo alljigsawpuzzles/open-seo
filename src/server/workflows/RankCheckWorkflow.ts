@@ -17,6 +17,7 @@ import { pgStep } from "@/server/workflows/pgStep";
 import { createDataforseoClient } from "@/server/lib/dataforseo";
 import { captureServerEvent } from "@/server/lib/posthog";
 import { sendCreditsExhaustedEvent } from "@/server/email/onboarding-drip";
+import { notifyRankCheckComplete } from "@/server/features/notifications/services/rankCheckNotifications";
 import { describeError } from "@/server/lib/errors";
 import { autumn } from "@/server/billing/autumn";
 import {
@@ -244,6 +245,15 @@ async function finalizeRankCheckRun(input: {
       keywords_checked: keywordsChecked,
     },
   });
+
+  if (status === "completed") {
+    await notifyRankCheckComplete({
+      runId: input.runId,
+      configId: input.configId,
+      projectId: input.projectId,
+      trigger: input.trigger,
+    });
+  }
 }
 
 async function markRankCheckRunFailed(input: {

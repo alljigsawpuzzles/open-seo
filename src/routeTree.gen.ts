@@ -60,6 +60,7 @@ import { Route as AppPProjectIdDomainRouteImport } from './routes/_app/p/$projec
 import { Route as AppPProjectIdKeywordsRouteImport } from './routes/_app/p/$projectId/keywords'
 import { Route as AppPProjectIdLocalSeoRouteImport } from './routes/_app/p/$projectId/local-seo'
 import { Route as AppPProjectIdPromptExplorerRouteImport } from './routes/_app/p/$projectId/prompt-explorer'
+import { Route as AppPProjectIdNotificationsRouteImport } from './routes/_app/p/$projectId/notifications'
 import { Route as AppPProjectIdRankTrackingRouteImport } from './routes/_app/p/$projectId/rank-tracking'
 import { Route as AppPProjectIdSamRouteImport } from './routes/_app/p/$projectId/sam'
 import { Route as AppPProjectIdSavedRouteImport } from './routes/_app/p/$projectId/saved'
@@ -345,6 +346,12 @@ const AppPProjectIdPromptExplorerRoute =
     path: '/prompt-explorer',
     getParentRoute: () => AppPProjectIdRouteRoute,
   } as any)
+const AppPProjectIdNotificationsRoute =
+  AppPProjectIdNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AppPProjectIdRouteRoute,
+  } as any)
 const AppPProjectIdRankTrackingRoute =
   AppPProjectIdRankTrackingRouteImport.update({
     id: '/rank-tracking',
@@ -531,6 +538,7 @@ export interface FileRoutesByFullPath {
   '/p/$projectId/keywords': typeof AppPProjectIdKeywordsRoute
   '/p/$projectId/local-seo': typeof AppPProjectIdLocalSeoRouteWithChildren
   '/p/$projectId/prompt-explorer': typeof AppPProjectIdPromptExplorerRoute
+  '/p/$projectId/notifications': typeof AppPProjectIdNotificationsRoute
   '/p/$projectId/rank-tracking': typeof AppPProjectIdRankTrackingRouteWithChildren
   '/p/$projectId/sam': typeof AppPProjectIdSamRoute
   '/p/$projectId/saved': typeof AppPProjectIdSavedRoute
@@ -601,6 +609,7 @@ export interface FileRoutesByTo {
   '/p/$projectId/domain': typeof AppPProjectIdDomainRoute
   '/p/$projectId/keywords': typeof AppPProjectIdKeywordsRoute
   '/p/$projectId/prompt-explorer': typeof AppPProjectIdPromptExplorerRoute
+  '/p/$projectId/notifications': typeof AppPProjectIdNotificationsRoute
   '/p/$projectId/sam': typeof AppPProjectIdSamRoute
   '/p/$projectId/saved': typeof AppPProjectIdSavedRoute
   '/p/$projectId/search-performance': typeof AppPProjectIdSearchPerformanceRoute
@@ -677,6 +686,7 @@ export interface FileRoutesById {
   '/_app/p/$projectId/keywords': typeof AppPProjectIdKeywordsRoute
   '/_app/p/$projectId/local-seo': typeof AppPProjectIdLocalSeoRouteWithChildren
   '/_app/p/$projectId/prompt-explorer': typeof AppPProjectIdPromptExplorerRoute
+  '/_app/p/$projectId/notifications': typeof AppPProjectIdNotificationsRoute
   '/_app/p/$projectId/rank-tracking': typeof AppPProjectIdRankTrackingRouteWithChildren
   '/_app/p/$projectId/sam': typeof AppPProjectIdSamRoute
   '/_app/p/$projectId/saved': typeof AppPProjectIdSavedRoute
@@ -753,6 +763,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/keywords'
     | '/p/$projectId/local-seo'
     | '/p/$projectId/prompt-explorer'
+    | '/p/$projectId/notifications'
     | '/p/$projectId/rank-tracking'
     | '/p/$projectId/sam'
     | '/p/$projectId/saved'
@@ -898,6 +909,7 @@ export interface FileRouteTypes {
     | '/_app/p/$projectId/keywords'
     | '/_app/p/$projectId/local-seo'
     | '/_app/p/$projectId/prompt-explorer'
+    | '/_app/p/$projectId/notifications'
     | '/_app/p/$projectId/rank-tracking'
     | '/_app/p/$projectId/sam'
     | '/_app/p/$projectId/saved'
@@ -1313,6 +1325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPProjectIdPromptExplorerRouteImport
       parentRoute: typeof AppPProjectIdRouteRoute
     }
+    '/_app/p/$projectId/notifications': {
+      id: '/_app/p/$projectId/notifications'
+      path: '/notifications'
+      fullPath: '/p/$projectId/notifications'
+      preLoaderRoute: typeof AppPProjectIdNotificationsRouteImport
+      parentRoute: typeof AppPProjectIdRouteRoute
+    }
     '/_app/p/$projectId/rank-tracking': {
       id: '/_app/p/$projectId/rank-tracking'
       path: '/rank-tracking'
@@ -1579,6 +1598,7 @@ interface AppPProjectIdRouteRouteChildren {
   AppPProjectIdKeywordsRoute: typeof AppPProjectIdKeywordsRoute
   AppPProjectIdLocalSeoRoute: typeof AppPProjectIdLocalSeoRouteWithChildren
   AppPProjectIdPromptExplorerRoute: typeof AppPProjectIdPromptExplorerRoute
+  AppPProjectIdNotificationsRoute: typeof AppPProjectIdNotificationsRoute
   AppPProjectIdRankTrackingRoute: typeof AppPProjectIdRankTrackingRouteWithChildren
   AppPProjectIdSamRoute: typeof AppPProjectIdSamRoute
   AppPProjectIdSavedRoute: typeof AppPProjectIdSavedRoute
@@ -1601,6 +1621,7 @@ const AppPProjectIdRouteRouteChildren: AppPProjectIdRouteRouteChildren = {
   AppPProjectIdKeywordsRoute: AppPProjectIdKeywordsRoute,
   AppPProjectIdLocalSeoRoute: AppPProjectIdLocalSeoRouteWithChildren,
   AppPProjectIdPromptExplorerRoute: AppPProjectIdPromptExplorerRoute,
+  AppPProjectIdNotificationsRoute: AppPProjectIdNotificationsRoute,
   AppPProjectIdRankTrackingRoute: AppPProjectIdRankTrackingRouteWithChildren,
   AppPProjectIdSamRoute: AppPProjectIdSamRoute,
   AppPProjectIdSavedRoute: AppPProjectIdSavedRoute,
