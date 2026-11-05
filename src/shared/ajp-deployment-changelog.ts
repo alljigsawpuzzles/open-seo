@@ -38,6 +38,34 @@ export const AJP_DEPLOYMENT_CHANGELOG_INTRO = {
 export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
   {
     version: "0.1.24",
+    deployedOn: "2026-11-05",
+    pullRequest: {
+      number: 35,
+      url: "https://github.com/alljigsawpuzzles/open-seo/pull/35",
+    },
+    mergeCommit: "c0df8c1a99287479027ec480426784e4a42a6ff2",
+    upstream: {
+      label: "Fork-only notification UX",
+      sections: [
+        {
+          title: "Rank alert rules",
+          items: [
+            "Filter alerts to improvements only or drops only (position_change_direction).",
+            "Edit and save rules; Preview rule sends a sample matching each rule.",
+            "Tracker country flag in UI; market shown in Slack/Teams payloads.",
+            "Truncated webhook host in connected channels list.",
+          ],
+        },
+      ],
+    },
+    forkChanges: [],
+    operations: [
+      "D1 migration 0065 (0065_slimy_blob.sql ledger id 00066); column position_change_direction on notification_rules.",
+      "Worker pair via publish-notifications.mjs — app 515b0901-…, audit 97c456c1-… (artifact ~/openseo-release-review/notifications-publication-2026-11-05T16-36-30-773Z).",
+    ],
+  },
+  {
+    version: "0.1.24",
     deployedOn: "2026-11-04",
     pullRequest: {
       number: 27,
@@ -134,7 +162,9 @@ export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
         },
       ],
     },
-    forkChanges: ["Shared rank trend helpers aligned with rank-tracking matrix UI."],
+    forkChanges: [
+      "Shared rank trend helpers aligned with rank-tracking matrix UI.",
+    ],
     operations: [
       "No D1 change; Worker pair via publish-notifications.mjs — app d58da05b-…, audit 8d2e4919-… (artifact ~/openseo-release-review/notifications-publication-2026-11-05T13-25-48-970Z).",
     ],
