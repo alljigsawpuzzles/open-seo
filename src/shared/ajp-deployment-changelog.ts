@@ -58,7 +58,7 @@ export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
     },
     forkChanges: [],
     operations: [
-      "No D1 change; Worker pair via publish-notifications.mjs (IDs after publish).",
+      "No D1 change; Worker pair via publish-notifications.mjs — app ac4dfb74-…, audit 3ad53419-… (artifact ~/openseo-release-review/notifications-publication-2026-11-06T11-21-08-216Z). Build source 6fffdbed.",
     ],
   },
   {
