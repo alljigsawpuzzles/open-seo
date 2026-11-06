@@ -50,7 +50,7 @@ export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
         {
           title: "Notification provider marks",
           items: [
-            "Official Slack and Teams marks as webp under public/notifications/.",
+            "Official Slack and Teams marks as webp under src/public/notifications/.",
             "Platform select triggers use mb-0 so the connect-channel row aligns.",
           ],
         },
