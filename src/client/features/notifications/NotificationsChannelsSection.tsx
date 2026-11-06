@@ -71,7 +71,7 @@ export function NotificationsChannelsSection({
                         }
                         disabled={!canStoreWebhooks}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="mb-0 w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
