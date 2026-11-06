@@ -12,7 +12,7 @@ const SRC: Record<NotificationProvider, string> = {
 };
 
 /**
- * Official marks from `public/notifications/*.webp` (brand assets supplied by operator).
+ * Official marks from `src/public/notifications/*.webp` (Vite `publicDir`; brand assets supplied by operator).
  */
 export function NotificationProviderIcon({
   provider,
