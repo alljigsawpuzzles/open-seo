@@ -20,7 +20,7 @@ function NotificationsRoute() {
 
   return (
     <div className="h-full overflow-auto px-4 py-4 pb-24 md:px-6 md:py-6 md:pb-8">
-      <div className="mx-auto max-w-3xl space-y-8">
+      <div className="mx-auto max-w-7xl space-y-4">
         <ProjectPageHeader projectId={projectId} title="Notifications" />
         <NotificationsPage projectId={projectId} />
       </div>

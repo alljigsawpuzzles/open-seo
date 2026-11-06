@@ -22,7 +22,7 @@ export function NotificationsPage({ projectId }: { projectId: string }) {
   const trackers = page.trackersQuery.data ?? [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
         Connect Slack or Microsoft Teams, then create rules that post to a
         channel when rank positions move. Webhook URLs are encrypted and never

@@ -1,5 +1,4 @@
 import { Pencil, Trash2 } from "lucide-react";
-import { z } from "zod";
 import { CardShell } from "@/client/components/CardShell";
 import { Button } from "@/client/components/ui/button";
 import { Input } from "@/client/components/ui/input";
@@ -16,12 +15,14 @@ import {
   RankTrackerLocationBadge,
   RankTrackerSelectLabel,
 } from "@/client/features/notifications/RankTrackerLocationBadge";
+import { NotificationProviderIcon } from "@/client/features/notifications/NotificationProviderIcon";
 import type { NotificationsPageController } from "@/client/features/notifications/useNotificationsPage";
 import { rankDirectionLabel } from "@/shared/rank-notification-direction";
 import {
   rankPositionChangeDirectionSchema,
   type NotificationChannelSummary,
   type NotificationRuleSummary,
+  type RankPositionChangeDirection,
 } from "@/types/schemas/notifications";
 import type { getRankTrackingConfigSummaries } from "@/serverFunctions/rank-tracking";
 
@@ -76,108 +77,110 @@ export function NotificationsRulesSection({
                   <p className="text-sm font-medium">Edit alert rule</p>
                 ) : null}
 
-                <ruleForm.Field name="channelId">
-                  {(field) => (
-                    <div className="space-y-2">
-                      <Label>Post to</Label>
-                      <Select
-                        value={field.state.value}
-                        onValueChange={field.handleChange}
-                      >
-                        <SelectTrigger className="w-full max-w-md">
-                          <SelectValue placeholder="Choose channel" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {channels.map((channel) => (
-                            <SelectItem key={channel.id} value={channel.id}>
-                              {channel.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </ruleForm.Field>
-
-                <ruleForm.Field name="rankConfigId">
-                  {(field) => (
-                    <div className="space-y-2">
-                      <Label>Rank tracker</Label>
-                      <Select
-                        value={field.state.value}
-                        onValueChange={field.handleChange}
-                      >
-                        <SelectTrigger className="w-full max-w-md">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All trackers</SelectItem>
-                          {trackers.map((tracker) => (
-                            <SelectItem key={tracker.id} value={tracker.id}>
-                              <RankTrackerSelectLabel
-                                domain={tracker.domain}
-                                locationCode={tracker.locationCode}
-                                locationName={tracker.locationName}
-                              />
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </ruleForm.Field>
-
-                <ruleForm.Field name="positionThreshold">
-                  {(field) => (
-                    <div className="space-y-2">
-                      <Label htmlFor="threshold">
-                        Alert when position changes by at least
-                      </Label>
-                      <Input
-                        id="threshold"
-                        type="number"
-                        min={1}
-                        max={100}
-                        className="max-w-[8rem]"
-                        value={field.state.value}
-                        onChange={(e) =>
-                          field.handleChange(Number(e.target.value))
-                        }
-                      />
-                    </div>
-                  )}
-                </ruleForm.Field>
-
-                <ruleForm.Field name="positionChangeDirection">
-                  {(field) => (
-                    <div className="space-y-2">
-                      <Label>Which moves count</Label>
-                      <Select
-                        value={field.state.value}
-                        onValueChange={(value) =>
-                          field.handleChange(
-                            value as z.infer<
-                              typeof rankPositionChangeDirectionSchema
-                            >,
-                          )
-                        }
-                      >
-                        <SelectTrigger className="w-full max-w-md">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {rankPositionChangeDirectionSchema.options.map(
-                            (option) => (
-                              <SelectItem key={option} value={option}>
-                                {rankDirectionLabel(option)}
+                <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
+                  <ruleForm.Field name="channelId">
+                    {(field) => (
+                      <div className="min-w-0 space-y-2 lg:w-52 lg:shrink-0 xl:w-60">
+                        <Label>Post to</Label>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={field.handleChange}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Choose channel" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {channels.map((channel) => (
+                              <SelectItem key={channel.id} value={channel.id}>
+                                <span className="inline-flex items-center gap-2">
+                                  <NotificationProviderIcon
+                                    provider={channel.provider}
+                                    size="sm"
+                                  />
+                                  {channel.name}
+                                </span>
                               </SelectItem>
-                            ),
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </ruleForm.Field>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </ruleForm.Field>
+
+                  <ruleForm.Field name="rankConfigId">
+                    {(field) => (
+                      <div className="min-w-0 flex-1 space-y-2 lg:min-w-[14rem]">
+                        <Label>Rank tracker</Label>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={field.handleChange}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All trackers</SelectItem>
+                            {trackers.map((tracker) => (
+                              <SelectItem key={tracker.id} value={tracker.id}>
+                                <RankTrackerSelectLabel
+                                  domain={tracker.domain}
+                                  locationCode={tracker.locationCode}
+                                  locationName={tracker.locationName}
+                                />
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </ruleForm.Field>
+
+                  <ruleForm.Field name="positionThreshold">
+                    {(field) => (
+                      <div className="min-w-0 space-y-2 lg:w-28 lg:shrink-0">
+                        <Label htmlFor="threshold">Min. move</Label>
+                        <Input
+                          id="threshold"
+                          type="number"
+                          min={1}
+                          max={100}
+                          className="w-full"
+                          value={field.state.value}
+                          onChange={(e) =>
+                            field.handleChange(Number(e.target.value))
+                          }
+                        />
+                      </div>
+                    )}
+                  </ruleForm.Field>
+
+                  <ruleForm.Field name="positionChangeDirection">
+                    {(field) => (
+                      <div className="min-w-0 space-y-2 lg:w-52 lg:shrink-0 xl:flex-1 xl:max-w-xs">
+                        <Label>Which moves count</Label>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(value) =>
+                            field.handleChange(value as RankPositionChangeDirection)
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {rankPositionChangeDirectionSchema.options.map(
+                              (option) => (
+                                <SelectItem key={option} value={option}>
+                                  {rankDirectionLabel(option)}
+                                </SelectItem>
+                              ),
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </ruleForm.Field>
+                </div>
 
                 <ruleForm.Field name="weeklySummary">
                   {(field) => (
@@ -230,9 +233,10 @@ export function NotificationsRulesSection({
                     ? trackerById.get(rule.rankConfigId)
                     : undefined;
                 return (
-                  <li key={rule.id} className="space-y-3 py-4 first:pt-0">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
+                  <li key={rule.id} className="py-4 first:pt-0">
+                    <div className="flex items-start gap-3">
+                      <NotificationProviderIcon provider={rule.provider} />
+                      <div className="min-w-0 flex-1">
                         <p className="flex flex-wrap items-center gap-1.5 font-medium">
                           <span>
                             {rule.rankConfigDomain ?? "All rank trackers"}
@@ -243,11 +247,10 @@ export function NotificationsRulesSection({
                               locationName={tracker.locationName}
                             />
                           ) : null}
-                          <span className="text-muted-foreground font-normal">
-                            → {rule.channelName}
-                          </span>
                         </p>
                         <p className="text-muted-foreground text-sm">
+                          {rule.channelName}
+                          {" · "}
                           Move ≥ {rule.positionThreshold} positions
                           {rule.positionChangeDirection !== "either"
                             ? ` · ${rankDirectionLabel(rule.positionChangeDirection)}`

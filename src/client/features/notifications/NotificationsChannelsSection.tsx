@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/client/components/ui/select";
 import type { NotificationsPageController } from "@/client/features/notifications/useNotificationsPage";
+import { NotificationProviderIcon } from "@/client/features/notifications/NotificationProviderIcon";
 import type { NotificationChannelSummary } from "@/types/schemas/notifications";
 
 export function NotificationsChannelsSection({
@@ -43,70 +44,73 @@ export function NotificationsChannelsSection({
                 void channelForm.handleSubmit();
               }}
             >
-              <channelForm.Field name="name">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor="channel-name">Name</Label>
-                    <Input
-                      id="channel-name"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="SEO alerts"
-                      disabled={!canStoreWebhooks}
-                    />
-                  </div>
-                )}
-              </channelForm.Field>
+              <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
+                <channelForm.Field name="name">
+                  {(field) => (
+                    <div className="min-w-0 space-y-2 lg:w-48 lg:shrink-0 xl:w-56">
+                      <Label htmlFor="channel-name">Name</Label>
+                      <Input
+                        id="channel-name"
+                        value={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="SEO alerts"
+                        disabled={!canStoreWebhooks}
+                      />
+                    </div>
+                  )}
+                </channelForm.Field>
 
-              <channelForm.Field name="provider">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label>Platform</Label>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(value) =>
-                        field.handleChange(value as "slack" | "teams")
-                      }
-                      disabled={!canStoreWebhooks}
-                    >
-                      <SelectTrigger className="w-full max-w-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="slack">Slack</SelectItem>
-                        <SelectItem value="teams">Microsoft Teams</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </channelForm.Field>
+                <channelForm.Field name="provider">
+                  {(field) => (
+                    <div className="min-w-0 space-y-2 lg:w-40 lg:shrink-0">
+                      <Label>Platform</Label>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={(value) =>
+                          field.handleChange(value as "slack" | "teams")
+                        }
+                        disabled={!canStoreWebhooks}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="slack">Slack</SelectItem>
+                          <SelectItem value="teams">Microsoft Teams</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </channelForm.Field>
 
-              <channelForm.Field name="webhookUrl">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor="webhook-url">Incoming webhook URL</Label>
-                    <Input
-                      id="webhook-url"
-                      type="url"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="https://hooks.slack.com/services/…"
-                      disabled={!canStoreWebhooks}
-                    />
-                  </div>
-                )}
-              </channelForm.Field>
+                <channelForm.Field name="webhookUrl">
+                  {(field) => (
+                    <div className="min-w-0 flex-1 space-y-2 lg:min-w-[16rem]">
+                      <Label htmlFor="webhook-url">Incoming webhook URL</Label>
+                      <Input
+                        id="webhook-url"
+                        type="url"
+                        value={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="https://hooks.slack.com/services/…"
+                        disabled={!canStoreWebhooks}
+                      />
+                    </div>
+                  )}
+                </channelForm.Field>
 
-              <Button
-                type="submit"
-                disabled={
-                  !canStoreWebhooks ||
-                  state.isSubmitting ||
-                  createChannelMutation.isPending
-                }
-              >
-                Save channel
-              </Button>
+                <Button
+                  type="submit"
+                  className="lg:shrink-0"
+                  disabled={
+                    !canStoreWebhooks ||
+                    state.isSubmitting ||
+                    createChannelMutation.isPending
+                  }
+                >
+                  Save channel
+                </Button>
+              </div>
             </form>
           )}
         </channelForm.Subscribe>
@@ -120,6 +124,7 @@ export function NotificationsChannelsSection({
                 key={channel.id}
                 className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
               >
+                <NotificationProviderIcon provider={channel.provider} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{channel.name}</p>
                   <p
