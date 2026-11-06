@@ -40,6 +40,31 @@ export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
     version: "0.1.24",
     deployedOn: "2026-11-06",
     pullRequest: {
+      number: 40,
+      url: "https://github.com/alljigsawpuzzles/open-seo/pull/40",
+    },
+    mergeCommit: "b740410359ce7ea3783091e523da5a2b370b6a08",
+    upstream: {
+      label: "Fork-only notification UX",
+      sections: [
+        {
+          title: "Notification provider marks",
+          items: [
+            "Official Slack and Teams marks as webp under public/notifications/.",
+            "Platform select triggers use mb-0 so the connect-channel row aligns.",
+          ],
+        },
+      ],
+    },
+    forkChanges: [],
+    operations: [
+      "No D1 change; Worker pair via publish-notifications.mjs (IDs after publish).",
+    ],
+  },
+  {
+    version: "0.1.24",
+    deployedOn: "2026-11-06",
+    pullRequest: {
       number: 37,
       url: "https://github.com/alljigsawpuzzles/open-seo/pull/37",
     },
