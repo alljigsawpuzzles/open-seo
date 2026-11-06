@@ -40,6 +40,30 @@ export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
     version: "0.1.24",
     deployedOn: "2026-11-06",
     pullRequest: {
+      number: 43,
+      url: "https://github.com/alljigsawpuzzles/open-seo/pull/43",
+    },
+    mergeCommit: "5c0dca25e715fa0148642976ca36c06dea43a7ea",
+    upstream: {
+      label: "Fork-only notification UX",
+      sections: [
+        {
+          title: "Notification icon paths",
+          items: [
+            "Slack/Teams webp marks moved to src/public/notifications/ (Vite publicDir) so /notifications/* URLs resolve.",
+          ],
+        },
+      ],
+    },
+    forkChanges: [],
+    operations: [
+      "No D1 change; Worker pair via publish-notifications.mjs (IDs after publish).",
+    ],
+  },
+  {
+    version: "0.1.24",
+    deployedOn: "2026-11-06",
+    pullRequest: {
       number: 40,
       url: "https://github.com/alljigsawpuzzles/open-seo/pull/40",
     },
