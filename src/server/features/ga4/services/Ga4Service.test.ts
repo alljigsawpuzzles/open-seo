@@ -1,3 +1,4 @@
+import { GoogleTokenError } from "@/server/lib/googleTokenErrors";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Ga4AdminApiError, Ga4TokenError } from "@/server/lib/ga4Errors";
 import { Ga4Service } from "./Ga4Service";
@@ -127,7 +128,12 @@ describe("Ga4Service", () => {
       { id: "grant-b", accountId: "sub-b" },
     ];
     mocks.listProperties
-      .mockRejectedValueOnce(new Ga4TokenError("revoked"))
+      .mockRejectedValueOnce(
+        new Ga4TokenError(
+          "revoked",
+          new GoogleTokenError("invalid_grant", 400),
+        ),
+      )
       .mockRejectedValueOnce(new Ga4AdminApiError(403, "forbidden"));
     const consoleError = vi
       .spyOn(console, "error")
@@ -159,5 +165,26 @@ describe("Ga4Service", () => {
       status: 403,
     });
     consoleError.mockRestore();
+  });
+  it("keeps the account connected when token acquisition fails temporarily", async () => {
+    mocks.state.grants = [{ id: "grant-a", accountId: "sub-a" }];
+    mocks.listProperties.mockRejectedValueOnce(
+      new Ga4TokenError(
+        "failed",
+        new GoogleTokenError("temporarily_unavailable", 503),
+      ),
+    );
+    const logged = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    try {
+      await expect(
+        Ga4Service.listPropertiesForUserWithGrantStatus("u1"),
+      ).resolves.toMatchObject({
+        accounts: [{ requiresReconnect: false, propertiesUnavailable: true }],
+      });
+    } finally {
+      logged.mockRestore();
+    }
   });
 });

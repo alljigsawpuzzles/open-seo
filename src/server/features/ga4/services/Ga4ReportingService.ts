@@ -132,8 +132,12 @@ export function mapGa4ReportError(error: unknown): never {
   if (error instanceof Ga4ReportError) throw error;
   if (error instanceof Ga4TokenError) {
     throw new Ga4ReportError(
-      "ga4_reconnect_required",
-      "The Google Analytics connection has expired or was revoked.",
+      error.requiresReconnect
+        ? "ga4_reconnect_required"
+        : "ga4_upstream_unavailable",
+      error.requiresReconnect
+        ? "The Google Analytics connection has expired or was revoked."
+        : "Google Analytics access could not be refreshed. Retry shortly; if this persists, ask your administrator to check the Google connection.",
     );
   }
   if (error instanceof Ga4MalformedResponseError) {

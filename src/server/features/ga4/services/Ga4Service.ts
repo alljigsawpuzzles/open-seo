@@ -49,7 +49,7 @@ async function userHasGrant(userId: string): Promise<boolean> {
 
 function requiresReconnect(error: unknown): boolean {
   return (
-    error instanceof Ga4TokenError ||
+    (error instanceof Ga4TokenError && error.requiresReconnect) ||
     (error instanceof Ga4AdminApiError && error.status === 401)
   );
 }

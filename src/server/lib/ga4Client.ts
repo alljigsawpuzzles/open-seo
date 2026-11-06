@@ -10,6 +10,7 @@ import {
   Ga4TokenError,
 } from "@/server/lib/ga4Errors";
 import { GA4_OAUTH_PROVIDER_ID } from "@/shared/ga4";
+import { GoogleTokenError } from "./googleTokenErrors";
 
 const GA4_ADMIN_API_BASE = "https://analyticsadmin.googleapis.com/v1beta";
 const GA4_ADMIN_ALPHA_API_BASE =
@@ -137,6 +138,12 @@ async function getGa4AccessToken(opts: {
       accountId: opts.ga4AccountId,
     });
   } catch (error) {
+    // Only allowlisted metadata is logged; upstream bodies and tokens are excluded.
+    console.error("ga4.token_acquisition_failed", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      reason: error instanceof GoogleTokenError ? error.reason : undefined,
+      status: error instanceof GoogleTokenError ? error.status : undefined,
+    });
     throw new Ga4TokenError(
       "Could not mint a Google Analytics access token.",
       error,
