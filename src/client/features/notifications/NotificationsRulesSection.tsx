@@ -86,7 +86,7 @@ export function NotificationsRulesSection({
                           value={field.state.value}
                           onValueChange={field.handleChange}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="mb-0 w-full">
                             <SelectValue placeholder="Choose channel" />
                           </SelectTrigger>
                           <SelectContent>
@@ -115,7 +115,7 @@ export function NotificationsRulesSection({
                           value={field.state.value}
                           onValueChange={field.handleChange}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="mb-0 w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -161,10 +161,12 @@ export function NotificationsRulesSection({
                         <Select
                           value={field.state.value}
                           onValueChange={(value) =>
-                            field.handleChange(value as RankPositionChangeDirection)
+                            field.handleChange(
+                              value as RankPositionChangeDirection,
+                            )
                           }
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="mb-0 w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
