@@ -38,6 +38,32 @@ export const AJP_DEPLOYMENT_CHANGELOG_INTRO = {
 export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
   {
     version: "0.1.24",
+    deployedOn: "2026-11-06",
+    pullRequest: {
+      number: 37,
+      url: "https://github.com/alljigsawpuzzles/open-seo/pull/37",
+    },
+    mergeCommit: "3270404ec9a39d8f443f80fe31b228eb985b985b",
+    upstream: {
+      label: "Fork-only notification UX",
+      sections: [
+        {
+          title: "Notifications page layout",
+          items: [
+            "Wider page shell (max-w-7xl) to match other project screens.",
+            "Responsive row layouts for connect-channel and rank-rule forms.",
+            "Slack/Teams provider icons on channels, rules, and channel picker.",
+          ],
+        },
+      ],
+    },
+    forkChanges: [],
+    operations: [
+      "No D1 change; Worker pair via publish-notifications.mjs (IDs filled in after publish).",
+    ],
+  },
+  {
+    version: "0.1.24",
     deployedOn: "2026-11-05",
     pullRequest: {
       number: 35,
