@@ -1,9 +1,11 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { NavTab, NavTabs } from "@/client/components/NavTabs";
 import { PageHeader } from "@/client/components/PageHeader";
+import { pageHead } from "@/client/lib/pageHead";
 import { isHostedClientAuthMode, usesBetterAuthClient } from "@/lib/auth-mode";
 
 export const Route = createFileRoute("/_app/settings")({
+  head: () => pageHead("Settings"),
   component: SettingsLayout,
 });
 

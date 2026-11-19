@@ -1,10 +1,10 @@
 import { getDomain } from "tldts";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
 import {
-  createDataforseoClient,
   CHATGPT_LOCATION_CODE,
   CHATGPT_LANGUAGE_CODE,
 } from "@/server/lib/dataforseo";
+import { fetchLiveSerp } from "@/server/lib/dataforseo/serp";
 import { AppError } from "@/server/lib/errors";
 
 // Preserve the pre-v0.1.14 DataForSEO-only relevance path for self-hosts.
@@ -40,14 +40,13 @@ export async function relevantQuestionsWithoutModel(
   brands: Array<{ domain: string }>,
   customer: BillingCustomerContext,
 ) {
-  const client = createDataforseoClient(customer);
-  const serp = await client.serp
-    .live({
-      keyword,
-      locationCode: CHATGPT_LOCATION_CODE,
-      languageCode: CHATGPT_LANGUAGE_CODE,
-      depth: 50,
-    })
+  const serp = await fetchLiveSerp({
+    keyword,
+    locationCode: CHATGPT_LOCATION_CODE,
+    languageCode: CHATGPT_LANGUAGE_CODE,
+    depth: 50,
+  })
+    .then((response) => response.data)
     .catch((error: unknown) => {
       if (error instanceof AppError && error.code === "UPSTREAM_UNAVAILABLE")
         return [];

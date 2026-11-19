@@ -11,7 +11,8 @@ export function NotificationsPage({ projectId }: { projectId: string }) {
     return (
       <QueryError
         error={page.setupQuery.error}
-        onRetry={page.setupQuery.refetch}
+        fallback="Could not load notification settings."
+        onRetry={() => void page.setupQuery.refetch()}
       />
     );
   }
