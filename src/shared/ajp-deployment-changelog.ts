@@ -38,7 +38,7 @@ export const AJP_DEPLOYMENT_CHANGELOG_INTRO = {
 export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
   {
     version: "0.1.31",
-    deployedOn: "Pending production deploy",
+    deployedOn: "2026-11-20",
     upstream: {
       label: "OpenSEO v0.1.31",
       compareUrl:
@@ -61,7 +61,9 @@ export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
       "Move-to-Every-App UI visible on self-host only (Access prod unchanged).",
     ],
     operations: [
-      "D1: apply 0075_every_app_transfers only after merge validation (expect ledger +1).",
+      "D1: 0075_every_app_transfers (ledger 75 rows; max id 00076; tables applied then ledger row recorded).",
+      "Workers: publish-v31.mjs 2026-11-20 — app 06dde8f9-…, audit b82aca06-… (artifact /opt/openseo/release-review/v0.1.31-publication-2026-11-20T14-38-15-191Z).",
+      "Rollback (prior 0.1.30): app 3d54b0e4-…, audit d06ef019-….",
     ],
     openFollowUps: [
       "Smoke GSC Insights and MCP local volume on droplet dev.",
