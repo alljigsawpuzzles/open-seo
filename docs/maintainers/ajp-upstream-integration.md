@@ -2,17 +2,19 @@
 
 Secret-free progress record for the self-hosted fork. Private operational detail stays under `/home/geoffajp/openseo-handover/`.
 
-## Verified baseline (2026-11-04)
+## Verified baseline (2026-11-20)
 
 | Item                          | Value                                                                                                   |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **Last deployed integration** | **v0.1.24** + fork **notification webhooks** (merge **`b7a96038`**, deploy **2026-11-04**)              |
+| **Canonical tree**            | **`/opt/openseo/app`** only (legacy `~/dev/open-seo` retired)                                          |
+| **Last deployed integration** | **v0.1.30** (releases **0.1.25–0.1.30**, PR **#48**, deploy **2026-11-20**)                           |
+| **In progress**               | **v0.1.31** on branch **`codex/upgrade-openseo-v0.1.31`** — D1 **0075_every_app_transfers**           |
 | Previous production           | v0.1.24 upstream-only (PR #27), 2026-11-04                                                            |
 | Fork `origin/main`            | **`10bf204c…`** @ OpenSEO **0.1.24** (notifications on `main`)                                        |
 | D1 ledger                     | **64** rows; latest **`0064_spicy_black_queen.sql`**; **0055** still skipped                          |
 | Live Workers @ 100%           | app **`c04703e8-…`**, audit **`4d2f8c43-…`** (see `notifications-publication-2026-11-04T17-25-46-887Z`) |
 | Publication scripts           | `prepare-v19-build.mjs`, **`apply-migration-0064.mjs`**, **`publish-notifications.mjs`**, plus v0.1.24 scripts |
-| Canonical dev                 | **`~/dev/open-seo`** on droplet **`134.209.21.186`** only                                               |
+| Canonical dev                 | **`/opt/openseo/app`** on droplet **`134.209.21.186`** only                                             |
 
 ## Release scope (verified tags — AJP deploy history)
 

@@ -37,6 +37,39 @@ export const AJP_DEPLOYMENT_CHANGELOG_INTRO = {
 /** Newest first. */
 export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
   {
+    version: "0.1.31",
+    deployedOn: "2026-11-20",
+    upstream: {
+      label: "OpenSEO v0.1.31",
+      compareUrl:
+        "https://github.com/every-app/open-seo/compare/v0.1.30...v0.1.31",
+      sections: [
+        {
+          title: "v0.1.31",
+          items: [
+            "GSC Insights redesign (per-query/page trends).",
+            "Settings: move self-host install to Every App (same version).",
+            "MCP: local search volume in get_keyword_metrics.",
+            "Fixes: embed rank links, backlink chart end date, AI visibility on Workers Paid self-host.",
+          ],
+        },
+      ],
+    },
+    forkChanges: [
+      "Every App transfer DDL renumbered to D1 0075 (fork 0073/0074 unchanged).",
+      "Cloudflare Access auth; OpenRouter/DataForSEO fork paths retained.",
+      "Move-to-Every-App UI visible on self-host only (Access prod unchanged).",
+    ],
+    operations: [
+      "D1: 0075_every_app_transfers (ledger 75 rows; max id 00076; tables applied then ledger row recorded).",
+      "Workers: publish-v31.mjs 2026-11-20 — app 06dde8f9-…, audit b82aca06-… (artifact /opt/openseo/release-review/v0.1.31-publication-2026-11-20T14-38-15-191Z).",
+      "Rollback (prior 0.1.30): app 3d54b0e4-…, audit d06ef019-….",
+    ],
+    openFollowUps: [
+      "Smoke GSC Insights and MCP local volume on droplet dev.",
+    ],
+  },
+  {
     version: "0.1.30",
     deployedOn: "2026-11-20",
     upstream: {
