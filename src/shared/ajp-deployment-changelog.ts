@@ -38,7 +38,7 @@ export const AJP_DEPLOYMENT_CHANGELOG_INTRO = {
 export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
   {
     version: "0.1.30",
-    deployedOn: "Pending production deploy",
+    deployedOn: "2026-11-19 (D1 only; Workers pending build)",
     upstream: {
       label: "OpenSEO v0.1.25 through v0.1.30",
       compareUrl:
@@ -77,8 +77,8 @@ export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
       "Prod DataForSEO; TREG optional via env for later.",
     ],
     operations: [
-      "D1: allowlisted bundle pending rehearsal (prod ledger 66 rows; apply 0066+ after approval).",
-      "Workers: deploy only after rank-cost smoke sign-off.",
+      "D1: allowlisted 0066–0074 applied 2026-11-19 (ledger count 74; max id 00075; 0055 still skipped).",
+      "Workers: pending selfhost build on droplet (SSR vite build OOM without swap); then publish-v30.mjs.",
     ],
     openFollowUps: [
       "Smoke rank multi-read cost on a small tracker before cutover.",
