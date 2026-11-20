@@ -76,17 +76,19 @@ export async function runAuditPhases(
     diagnostics,
   } = params;
   const origin = getOrigin(startUrl);
-  const maxPages = config.maxPages;
+  const { maxPages, excludePaths } = config;
 
   const discovery = await runDiscoveryPhase(step, {
     ...params,
     origin,
-    maxPages,
+    startUrl,
+    config,
+    access,
   });
   // Parsed outside the step from checkpointed text, so replays see the exact
   // robots rules the original run used (a live re-fetch could differ and
   // desync the frontier from already-persisted crawl batches).
-  const robots = parseRobotsTxt(origin, discovery.robotsText);
+  const robots = parseRobotsTxt(origin, discovery.robotsText, excludePaths);
   const crawl = await runCrawlPhase(step, {
     ...params,
     origin,
@@ -121,9 +123,16 @@ export async function runAuditPhases(
 
 async function runDiscoveryPhase(
   step: WorkflowStep,
-  input: AuditPhasesParams & { origin: string; maxPages: number },
+  input: AuditPhasesParams & {
+    origin: string;
+    startUrl: string;
+    config: AuditConfig;
+    access?: CrawlerAccess | null;
+  },
 ) {
-  const { auditId, workflowInstanceId, origin, startUrl, maxPages } = input;
+  const { auditId, workflowInstanceId, origin, startUrl, access, diagnostics } =
+    input;
+  const { maxPages, excludePaths } = input.config;
   // "-v2": the checkpoint shape changed (seeds now live in the scratchpad DO
   // instead of the step return). A pre-refactor instance replayed under this
   // code must re-run discovery — resuming from the old cached {sitemapUrls}
@@ -132,10 +141,10 @@ async function runDiscoveryPhase(
     const result = await discoverUrls(
       origin,
       maxPages,
-      input.access,
-      input.diagnostics,
+      access,
+      diagnostics,
     );
-    const robots = parseRobotsTxt(origin, result.robotsText);
+    const robots = parseRobotsTxt(origin, result.robotsText, excludePaths);
     const scratchpad = getAuditScratchpad(auditId);
 
     // Seeds go straight into the scratchpad frontier — nothing large is
@@ -373,7 +382,10 @@ async function finalizeAudit(args: {
     const linksStartedAt = Date.now();
     const linkIssues = await runScratchpadLinkChecks(auditId, startUrl, {
       ...crawl,
-      completed: crawl.completed && !hasUnreadShells,
+      // Excluded pages are never read, so their links are unknown: a page
+      // linked only from them would be reported as an orphan.
+      completed:
+        crawl.completed && !hasUnreadShells && !config.excludePaths?.length,
     });
     console.info("Audit link checks completed", {
       auditId,
@@ -381,12 +393,8 @@ async function finalizeAudit(args: {
       issueCount: linkIssues.length,
     });
     issues.push(...linkIssues);
-    if (crawl.stoppedBy) {
-      issues.push({
-        issueType: crawl.stoppedBy,
-        pageId: null,
-        pageUrl: startUrl,
-      });
+    if (crawl.stopIssue) {
+      issues.push({ ...crawl.stopIssue, pageId: null, pageUrl: startUrl });
     }
     const persistStartedAt = Date.now();
     await AuditRepository.insertIssues(auditId, issues);

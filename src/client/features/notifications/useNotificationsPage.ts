@@ -112,10 +112,11 @@ export function useNotificationsPage(projectId: string) {
   const channelForm = useAppForm({
     defaultValues: {
       name: "",
-      provider: "slack" as const,
+      provider: "slack" as "slack" | "teams",
       webhookUrl: "",
     },
-    validators: { onDynamic: revalidateLogic({ mode: "blur" }) },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: channelSchema },
     onSubmit: async ({ value }) => {
       const parsed = channelSchema.safeParse(value);
       if (!parsed.success) {
@@ -130,7 +131,14 @@ export function useNotificationsPage(projectId: string) {
 
   const ruleForm = useAppForm({
     defaultValues: defaultRuleValues,
-    validators: { onDynamic: revalidateLogic({ mode: "blur" }) },
+    validationLogic: revalidateLogic(),
+    validators: {
+      onDynamic: ({ value }) => {
+        const parsed = ruleSchema.safeParse(value);
+        if (parsed.success) return undefined;
+        return parsed.error.flatten().fieldErrors;
+      },
+    },
     onSubmit: async ({ value }) => {
       const parsed = ruleSchema.safeParse(value);
       if (!parsed.success) {

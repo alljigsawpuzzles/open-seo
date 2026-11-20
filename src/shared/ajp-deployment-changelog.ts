@@ -37,6 +37,56 @@ export const AJP_DEPLOYMENT_CHANGELOG_INTRO = {
 /** Newest first. */
 export const AJP_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry[] = [
   {
+    version: "0.1.30",
+    deployedOn: "2026-11-20",
+    upstream: {
+      label: "OpenSEO v0.1.25 through v0.1.30",
+      compareUrl:
+        "https://github.com/every-app/open-seo/compare/v0.1.24...v0.1.30",
+      sections: [
+        {
+          title: "v0.1.25–0.1.26",
+          items: [
+            "Keywords dashboard redesign; rank checks may multi-read keywords (higher cost, more accurate).",
+            "Suggested keywords → save to keyword research.",
+          ],
+        },
+        {
+          title: "v0.1.27",
+          items: [
+            "Local SEO; Lighthouse in audits; audit path exclusions.",
+          ],
+        },
+        {
+          title: "v0.1.28–0.1.29",
+          items: [
+            "Google AI Mode engine; optional TREG API provider; incomplete Google result handling fixes.",
+          ],
+        },
+        {
+          title: "v0.1.30",
+          items: ["Project embeds (Integrations); guest account schema (hosted paths)."],
+        },
+      ],
+    },
+    forkChanges: [
+      "Notifications (0064/0065) preserved; upstream DDL renumbered to 0066–0074 for D1 journal.",
+      "Cloudflare Access auth; OpenRouter gate bypass + DataForSEO-only Prompt Research fallback.",
+      "Audit crawler diagnostics and Shopify crawl behaviour retained.",
+      "Embeds merged but not promoted on Access prod until smoke-tested (decision A).",
+      "Prod DataForSEO; TREG optional via env for later.",
+    ],
+    operations: [
+      "D1: allowlisted 0066–0074 applied 2026-11-19 (ledger count 74; max id 00075; 0055 still skipped).",
+      "Workers: publish-v30.mjs 2026-11-20 — app 3d54b0e4-…, audit d06ef019-… (artifact /opt/openseo/release-review/v0.1.30-publication-2026-11-20T08-16-28-440Z).",
+      "Rollback (prior): app f5a65ea2-…, audit a05c948d-….",
+    ],
+    openFollowUps: [
+      "Smoke rank multi-read cost on a small tracker before cutover.",
+      "Embeds behind Access if promoted later.",
+    ],
+  },
+  {
     version: "0.1.24",
     deployedOn: "2026-11-06",
     pullRequest: {

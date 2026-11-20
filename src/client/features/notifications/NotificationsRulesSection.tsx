@@ -84,7 +84,9 @@ export function NotificationsRulesSection({
                         <Label>Post to</Label>
                         <Select
                           value={field.state.value}
-                          onValueChange={field.handleChange}
+                          onValueChange={(value) => {
+                            if (value != null) field.handleChange(value);
+                          }}
                         >
                           <SelectTrigger className="mb-0 w-full">
                             <SelectValue placeholder="Choose channel" />
@@ -113,7 +115,9 @@ export function NotificationsRulesSection({
                         <Label>Rank tracker</Label>
                         <Select
                           value={field.state.value}
-                          onValueChange={field.handleChange}
+                          onValueChange={(value) => {
+                            if (value != null) field.handleChange(value);
+                          }}
                         >
                           <SelectTrigger className="mb-0 w-full">
                             <SelectValue />
